@@ -1,172 +1,561 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f3f0e9"><title>插單 · Capture Pad</title>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3f0e9">
+<title>插單 · Capture Pad</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="插單">
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#f3f0e9;--card:#fffdf8;--ink:#292823;--muted:#7d786d;--line:#ded8cc;--accent:#596456;--danger:#8a5a54;--shadow:0 12px 36px rgba(55,48,38,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}main{max-width:720px;margin:auto;padding:24px 16px 80px}.top,.sectionhead,.statusrow{display:flex;align-items:center;justify-content:space-between}.top{align-items:end;margin:8px 2px 20px}.title{font-size:28px;font-weight:750;letter-spacing:.04em}.sub,.count,.tiny,.meta{color:var(--muted)}.sub{font-size:13px;margin-top:4px}.count{font-size:13px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.label{font-size:12px;letter-spacing:.08em;color:var(--muted);margin-bottom:9px}.capture{display:flex;gap:8px}.dateRow{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}.dateRow label{font-size:12px;color:var(--muted)}input{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px;font-size:14px;color:var(--ink);outline:none}.capture input{flex:1;border-radius:13px;padding:14px 13px;font-size:16px}.btn{border:0;border-radius:12px;padding:0 15px;background:var(--accent);color:white;font-weight:700;font-size:15px;cursor:pointer}.btn.secondary{background:#ece8df;color:var(--ink);padding:10px 12px}.btn.danger{background:#f0e4e1;color:var(--danger);padding:10px 12px}.now{display:flex;align-items:center;gap:10px}.dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}.nowtext{font-size:17px;font-weight:650;flex:1}.empty{color:var(--muted);font-size:14px}.row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid #eee9df}.row:first-of-type{border-top:0}.check{width:22px;height:22px;border:1.5px solid #aaa497;border-radius:50%;background:transparent;cursor:pointer;flex:none;margin-top:1px}.body{flex:1;min-width:0}.text{font-size:15px;line-height:1.45;word-break:break-word}.meta{font-size:11px;margin-top:3px}.actions{display:flex;gap:5px}.icon{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:17px;padding:2px 5px}.pin{color:var(--accent)}.sectiontitle{font-size:14px;font-weight:750}.done .text{text-decoration:line-through;color:#999388}.footer{text-align:center;font-size:11px;color:#918b80;margin-top:20px}.tiny{font-size:11px;margin-top:8px;line-height:1.5}.authgrid{display:grid;gap:9px}.authgrid input{width:100%}.status{font-size:12px;color:var(--muted)}.status.ok{color:var(--accent)}.status.bad{color:var(--danger)}.pill{font-size:11px;padding:6px 9px;border-radius:999px;background:#ece8df;color:var(--muted)}.hidden{display:none!important}@media(max-width:480px){main{padding:16px 12px 72px}.title{font-size:25px}.card{border-radius:16px}.btn{padding:0 13px}.capture input{font-size:16px}}
+:root{--bg:#f3f0e9;--card:#fffdf8;--ink:#292823;--muted:#7d786d;--line:#ded8cc;--soft:#ece8df;--accent:#596456;--accent-soft:#e3e7df;--danger:#8a5a54;--danger-soft:#f0e4e1;--shadow:0 10px 30px rgba(55,48,38,.07)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
 
-.menuBtn{position:fixed;left:14px;top:14px;z-index:30;width:42px;height:42px;border:1px solid var(--line);border-radius:13px;background:#fffdf8;font-size:21px}.mask{position:fixed;inset:0;background:#2225;z-index:40;display:none}.mask.open{display:block}.drawer{position:fixed;left:0;top:0;bottom:0;width:min(82vw,330px);background:#fbfaf7;z-index:41;transform:translateX(-105%);transition:.2s;padding:32px 20px;display:flex;flex-direction:column;box-shadow:12px 0 35px #0002}.drawer.open{transform:none}.brand{padding:8px 8px 20px;border-bottom:1px solid var(--line);font-size:25px;font-weight:800}.nav{display:grid;gap:7px;padding-top:16px}.nav button{border:0;background:transparent;text-align:left;padding:13px;border-radius:13px;font:inherit;font-weight:650}.nav button.active{background:white;border:1px solid var(--line)}.vhide{display:none!important}.caseCard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}.caseHead{display:flex;gap:9px;align-items:center}.caseTitle{font-size:17px;font-weight:800;flex:1}.caseDetail{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}.caseNote{width:100%;min-height:70px;border:1px solid var(--line);border-radius:11px;padding:10px;font:inherit}.sub{display:grid;grid-template-columns:24px 1fr auto;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}.submeta{font-size:11px;color:var(--muted);margin-top:3px}.subform{display:grid;grid-template-columns:1fr 1fr;gap:7px}.subform .wide{grid-column:1/-1}.drawerFoot{margin-top:auto;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:14px}@media(max-width:560px){.subform{grid-template-columns:1fr}.subform .wide{grid-column:auto}}
+/* 正在做 */
+.focusBar{position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg) 78%,rgba(243,240,233,0));padding:calc(14px + env(safe-area-inset-top)) 22px 12px}
+.focusCard{max-width:1500px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:12px 12px 12px 16px;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
+.focusDot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+.focusCard.on .focusDot{background:var(--accent)}
+.focusMain{flex:1;min-width:0}
+.focusLabel{font-size:11px;color:var(--muted)}
+.focusText{font-weight:750;font-size:16px;margin-top:2px;word-break:break-word}
+.focusCard:not(.on) .focusText{font-weight:500;color:var(--muted);font-size:14px}
+.focusPrev{font-size:12px;color:var(--muted);margin-top:3px}
+.focusPrev:empty{display:none}
+.focusSide{display:flex;gap:8px;align-items:center;flex:none}
+.pill{font-size:11px;padding:6px 9px;border-radius:999px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--accent)}
+.pill.bad{color:var(--danger);background:var(--danger-soft)}
 
-/* v0.8.1 hotfix */
-.menuBtn{
-  left:max(14px, calc((100vw - 760px)/2 - 58px));
-  top:calc(16px + env(safe-area-inset-top));
-}
-#homeView{display:block}
-#homeView.vhide,#casesView.vhide,#doneView.vhide,#settingsView.vhide{display:none!important}
-#casesView,#doneView,#settingsView{box-sizing:border-box}
-@media(max-width:900px){
-  .menuBtn{left:auto;right:14px;top:calc(14px + env(safe-area-inset-top))}
-  #homeView{padding-top:54px!important}
-}
+/* 三欄 */
+.workspace{max-width:1500px;margin:4px auto 0;padding:0 22px 20px;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr) minmax(280px,.9fr);gap:18px;align-items:start}
+.col{min-width:0}
+.colHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 2px 10px}
+.colHead h2{margin:0;font-size:20px;letter-spacing:.03em}
+.colHint{font-size:11px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin:0 0 14px}
+.label{font-size:12px;color:var(--muted);margin-bottom:9px}
+.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.sectiontitle{font-size:14px;font-weight:750}
+.count{font-size:12px;color:var(--muted)}
+input,textarea{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px;font-size:16px;outline:none;min-width:0;width:100%}
+input:focus,textarea:focus{border-color:var(--accent)}
+.capture{display:flex;gap:8px}
+.capture input{flex:1;border-radius:13px;padding:13px}
+.dateRow{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.dateRow label{font-size:12px;color:var(--muted);margin-right:2px}
+.dateRow input{width:auto;padding:6px 9px;font-size:14px}
+.btn{border:0;border-radius:12px;padding:0 16px;min-height:44px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;white-space:nowrap}
+.btn.secondary{background:var(--soft);color:var(--ink);font-weight:600;font-size:13px;min-height:34px;padding:0 11px;border-radius:10px}
+.btn.danger{background:var(--danger-soft);color:var(--danger);font-weight:600;font-size:13px;min-height:34px;padding:0 11px;border-radius:10px}
+.btn.ghost{background:transparent;color:var(--muted);font-size:12px;min-height:30px;padding:0 8px;font-weight:600}
+.tiny{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+.tiny:empty{display:none}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid #eee9df}
+.row:first-child{border-top:0}
+.check{width:22px;height:22px;border:1.5px solid #aaa497;border-radius:50%;background:transparent;flex:none;margin-top:1px;padding:0}
+.check.on{background:var(--accent);border-color:var(--accent)}
+.body{flex:1;min-width:0}
+.text{font-size:15px;line-height:1.45;word-break:break-word}
+.meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+.due{color:var(--accent);font-weight:700}
+.due.late{color:var(--danger)}
+.actions{display:flex;flex:none}
+.icon{border:0;background:transparent;color:var(--muted);font-size:16px;width:32px;height:32px;border-radius:8px;padding:0}
+.icon:hover{background:var(--soft)}
+.icon.pin{color:var(--accent)}
+.done .text{text-decoration:line-through;color:#999388}
+.isNow .text{font-weight:750}
 
-.workspace{max-width:1500px;margin:18px auto 70px;padding:0 22px;display:grid;grid-template-columns:1fr 1.15fr .9fr;gap:18px;align-items:start}.workspaceCol{min-width:0}.colHead{display:flex;justify-content:space-between;align-items:end;margin-bottom:10px}.colHead h2{margin:0;font-size:21px}.colHint{font-size:11px;color:var(--muted)}.focusBar{max-width:1500px;margin:72px auto 0;padding:0 22px}.focusCard{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px 16px;display:flex;gap:12px;align-items:center}.focusText{font-weight:800}.focusPrev{font-size:12px;color:var(--muted);margin-left:auto}.upcomingCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:9px}.upDate{font-size:12px;font-weight:800;color:var(--accent)}.upTitle{font-size:14px;font-weight:750;margin-top:4px}.upMeta{font-size:11px;color:var(--muted);margin-top:3px}@media(min-width:981px){.menuBtn{display:none!important}#homeView,#casesView{display:block!important;max-width:none!important;width:auto!important;margin:0!important;padding:0!important}#homeView>.header,#homeView>header,#casesView>h1,#casesView>p,#casesView>.card:first-of-type{display:none!important}#doneView,#settingsView{display:none!important}}@media(max-width:980px){.workspace{display:block;padding:0 14px}.workspaceCol{display:none}.workspaceCol.mobileActive{display:block}.focusBar{margin-top:72px;padding:0 14px}.focusCard{flex-wrap:wrap}.focusPrev{width:100%;margin-left:0}}
-/* v0.9.1 layout cleanup */
-body{overflow-x:hidden}
-.focusBar{margin-top:28px}
-.workspace{margin-top:16px;grid-template-columns:minmax(300px,.95fr) minmax(390px,1.18fr) minmax(300px,.95fr)}
-#generalCol #homeView{max-width:none;margin:0;padding:0}
-#generalCol #homeView .top{margin:0 0 12px}
-#generalCol #homeView .title{font-size:21px}
-#generalCol #homeView .sub{display:none}
-#generalCol #homeView #app>.card:nth-of-type(2){display:none} /* duplicate '正在做' is now global */
-#generalCol #homeView .footer{display:none}
-#casesCol #casesView{max-width:none!important;margin:0!important;padding:0!important}
-#casesCol #casesView>h1,#casesCol #casesView>p{display:none!important}
-#casesCol #casesView>.card:first-of-type{display:block!important}
-.caseCard{padding:14px}
-.caseDetail{padding-top:14px}
-.caseDetail .label{margin-top:10px}
-.subform{grid-template-columns:1fr!important;gap:9px}
-.fieldBlock{display:grid;gap:5px}
-.fieldCaption{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+/* 案件 */
+.caseForm{display:flex;gap:8px}
+.caseCard{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.caseCard summary{list-style:none;display:flex;gap:10px;align-items:center;padding:14px 14px 14px 16px;cursor:pointer}
+.caseCard summary::-webkit-details-marker{display:none}
+.caseTitle{font-size:16px;font-weight:800;flex:1;min-width:0;word-break:break-word}
+.progress{font-size:12px;color:var(--muted)}
+.chev{color:var(--muted);transition:transform .15s}
+.caseCard[open] .chev{transform:rotate(180deg)}
+.caseBody{border-top:1px solid var(--line);padding:12px 16px 16px}
+.caseNote{min-height:70px;resize:vertical;line-height:1.5;font-size:15px}
+.subRow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eee9df}
+.subRow .text{font-weight:650}
+.subform{display:grid;gap:9px}
+.field{display:grid;gap:5px;min-width:0}
+.fieldCaption{font-size:11px;color:var(--muted);font-weight:700}
 .fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.fieldRow .fieldBlock{min-width:0}
-#upcomingCol .card{margin-bottom:10px}
+.caseFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px}
+
+/* 近期 */
+.upGroup{font-size:12px;font-weight:750;color:var(--muted);margin:16px 2px 8px}
+.upGroup:first-child{margin-top:0}
+.upGroup.late{color:var(--danger)}
+.upGroup .n{font-weight:500;margin-left:6px}
+.upItem{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 6px 10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.upDate{font-size:12px;font-weight:800;color:var(--accent);width:78px;flex:none;padding-top:2px}
+.upItem.late .upDate{color:var(--danger)}
+.upTitle{font-size:14px;font-weight:700;word-break:break-word}
+
+/* 登入 */
+.gate{max-width:440px;margin:0 auto;padding:calc(48px + env(safe-area-inset-top)) 16px 40px}
+.gateTitle{font-size:28px;font-weight:750;letter-spacing:.04em}
+.gateSub{color:var(--muted);font-size:13px;margin:4px 0 20px}
+.authgrid{display:grid;gap:9px;margin-top:10px}
+.status{font-size:12px;color:var(--muted)}
+body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .footer{display:none}
+
+.footer{text-align:center;font-size:11px;color:#918b80;padding:6px 16px 30px}
+.footer .who{margin-right:4px}
+
+/* 手機：底部分頁 */
+.tabs{display:none}
 @media(max-width:980px){
-  .focusBar{margin-top:70px}
-  #homeView{padding-top:0!important}
-  #generalCol #homeView .top{display:flex!important}
-  #generalCol #homeView .title{font-size:26px}
-  #generalCol #homeView .sub{display:block}
+  .focusBar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+  .workspace{display:block;padding:0 14px 10px}
+  .col{display:none}
+  body[data-tab="general"] #col-general,
+  body[data-tab="cases"] #col-cases,
+  body[data-tab="upcoming"] #col-upcoming{display:block}
+  .footer{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .tabs{display:flex;position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:30;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:5px;gap:4px;box-shadow:0 10px 30px rgba(55,48,38,.14)}
+  .tabs button{flex:1;border:0;background:transparent;border-radius:13px;padding:11px 0;font-weight:650;font-size:14px;color:var(--muted)}
+  .tabs button.active{background:var(--accent-soft);color:var(--ink)}
+  .tabs .n{font-size:11px;margin-left:4px;font-weight:500}
+  .tabs .n.late{color:var(--danger);font-weight:700}
   .fieldRow{grid-template-columns:1fr}
+  .focusText{font-size:15px}
 }
-</style></head><body><div class="focusBar"><div class="focusCard"><div style="flex:1"><div class="meta">正在做</div><div id="focusText" class="focusText">目前沒有設定。</div></div><div id="focusPrev" class="focusPrev"></div></div></div><div class="workspace"><section id="generalCol" class="workspaceCol mobileActive"><div class="colHead"><h2>一般</h2><span class="colHint">快速插單</span></div><div id="gm"></div></section><section id="casesCol" class="workspaceCol"><div class="colHead"><h2>案件</h2><span class="colHint">長流程與子任務</span></div><div id="cm"></div></section><section id="upcomingCol" class="workspaceCol"><div class="colHead"><h2>近期</h2><span class="colHint">只看有日期的事</span></div><div id="upcomingList"></div></section></div><button class="menuBtn" onclick="drawerOpen()">☰</button><div id="mask" class="mask" onclick="drawerClose()"></div><aside id="drawer" class="drawer"><div class="brand">插單<div style="font-size:12px;color:var(--muted);font-weight:400">Capture Pad</div></div><div class="nav"><button id="n-home" class="active" onclick="view('home')">○　一般</button><button id="n-cases" onclick="view('cases')">▣　案件</button><button id="n-done" onclick="view('done')">◷　近期</button><button id="n-settings" onclick="view('settings')">⚙　設定</button></div><div class="drawerFoot">Capture Pad v0.9.1 · Layout</div></aside><main id="homeView">
-<div class="top"><div><div class="title">插單</div><div class="sub">先記下來。不要現在處理。</div></div><div><div class="count" id="count"></div><div class="pill" id="cloudPill">未連接</div></div></div>
-<section class="card" id="connectCard"><div class="sectiontitle">第一次連接</div><div class="tiny">只需要設定一次。Project URL 已先帶入；請貼上 Supabase 的 <b>Publishable key</b>。不要使用 Secret key。</div><div class="authgrid" style="margin-top:10px"><input id="sbUrl" value="https://xdymhrblfpwrnertsbre.supabase.co"><input id="sbKey" type="password" placeholder="sb_publishable_…"><button class="btn secondary" id="saveConnect">儲存連接設定</button><div id="connectStatus" class="status"></div></div></section>
-<section class="card hidden" id="loginCard"><div class="sectiontitle">登入 Capture Pad</div><div class="tiny">使用妳剛才在 Supabase Authentication 建立的 Email 與密碼。</div><div class="authgrid" style="margin-top:10px"><input id="email" type="email" autocomplete="username" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><button class="btn" id="loginBtn" style="height:44px">登入</button><div id="loginStatus" class="status"></div></div></section>
-<div id="app" class="hidden">
-<section class="card"><div class="label">現在有什麼不能忘？</div><form id="captureForm"><div class="capture"><input id="captureInput" autocomplete="off" placeholder="例如：○○居留證申請"><button class="btn">記下</button></div><div class="dateRow"><label for="dueDate">預計日期</label><input id="dueDate" type="date"><button type="button" class="btn secondary" id="todayBtn">今天</button><button type="button" class="btn secondary" id="clearDateBtn">不指定</button></div></form><div class="tiny">新增、完成、釘選與日期變更會自動同步。</div></section>
-<section class="card"><div class="sectionhead"><div class="sectiontitle">正在做</div><button class="btn secondary" id="clearNow">清除</button></div><div id="nowBox"></div></section>
-<section class="card"><div class="sectionhead"><div class="sectiontitle">尚未完成</div><span class="count" id="openCount"></span></div><div id="openList"></div></section>
-<section class="card"><div class="sectionhead"><div class="sectiontitle">今天完成</div><button class="btn danger" id="clearDone">清掉完成項</button></div><div id="doneList"></div></section>
-<section class="card"><div class="statusrow"><div><div class="sectiontitle">帳號</div><div id="who" class="tiny"></div></div><button class="btn secondary" id="logoutBtn">登出</button></div></section>
-</div><div class="footer">Capture Pad v0.9.1 · Layout</div></main>
-<script>
-const LOCAL='capturePad.v01.items', NOW='capturePad.v01.now', CFG='capturePad.v04.connection'; const $=s=>document.querySelector(s); let client=null,user=null,items=[],current=localStorage.getItem(NOW)||'',channel=null;
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))} function stamp(ts){return new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts))} function dueLabel(d){if(!d)return'';const[y,m,day]=d.split('-').map(Number),dt=new Date(y,m-1,day),n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()),diff=Math.round((dt-t)/86400000);return diff===0?'今天':diff===1?'明天':diff===-1?'昨天':`${m}/${day}`} function todayISO(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c} function show(el,on){$(el).classList.toggle('hidden',!on)}
-function render(){const open=items.filter(x=>!x.is_completed).sort((a,b)=>(b.is_pinned-a.is_pinned)||((a.planned_date||'9999').localeCompare(b.planned_date||'9999'))||new Date(b.updated_at)-new Date(a.updated_at)),done=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));$('#count').textContent=`${open.length} 件待處理`;$('#openCount').textContent=open.length?`${open.length} 件`:'';$('#nowBox').innerHTML=current?`<div class="now"><span class="dot"></span><div class="nowtext">${esc(current)}</div></div>`:`<div class="empty">目前沒有設定。從下方事項按「▶」即可。</div>`;$('#openList').innerHTML=open.length?open.map(x=>`<div class="row"><button class="check" onclick="completeItem('${x.id}')"></button><div class="body"><div class="text">${esc(x.content)}</div><div class="meta">${x.planned_date?`預計 ${dueLabel(x.planned_date)} · `:''}記錄 ${stamp(x.created_at)}${x.is_pinned?' · 已釘選':''}</div></div><div class="actions"><button class="icon" onclick="setNow('${x.id}')">▶</button><button class="icon ${x.is_pinned?'pin':''}" onclick="togglePin('${x.id}')">⌖</button><button class="icon" onclick="deleteItem('${x.id}')">×</button></div></div>`).join(''):`<div class="empty">很好，暫時沒有東西追著妳跑。</div>`;$('#doneList').innerHTML=done.length?done.slice(0,20).map(x=>`<div class="row done"><div class="body"><div class="text">${esc(x.content)}</div><div class="meta">完成 ${stamp(x.updated_at)}</div></div><button class="icon" onclick="undoItem('${x.id}')">↶</button></div>`).join(''):`<div class="empty">今天還沒有完成紀錄。</div>`}
-async function loadItems(){pill('同步中…');const {data,error}=await client.from('capture_items').select('*').order('created_at',{ascending:true});if(error){pill('同步失敗','bad');throw error}items=data||[];render();pill('● 已同步','ok')}
-async function migrateLocal(){const raw=JSON.parse(localStorage.getItem(LOCAL)||'[]'); if(!raw.length)return; const existing=new Set(items.map(x=>x.id)); const payload=raw.filter(x=>!existing.has(x.id)).map(x=>({id:x.id,user_id:user.id,content:x.text,planned_date:x.due||null,is_pinned:!!x.pin,is_completed:!!x.done,is_active:false,created_at:new Date(x.ts||Date.now()).toISOString(),updated_at:new Date(x.updated||x.ts||Date.now()).toISOString()})); if(payload.length){const {error}=await client.from('capture_items').insert(payload);if(!error){localStorage.removeItem(LOCAL);await loadItems()}}}
-function subscribe(){if(channel)client.removeChannel(channel);channel=client.channel('capture-items-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'capture_items',filter:`user_id=eq.${user.id}`},()=>loadItems()).subscribe()}
-async function startApp(){show('#connectCard',false);show('#loginCard',false);show('#app',true);$('#who').textContent=user.email||'';await loadItems();await migrateLocal();subscribe()}
-async function init(){const cfg=JSON.parse(localStorage.getItem(CFG)||'{}');if(!cfg.url||!cfg.key){show('#connectCard',true);show('#loginCard',false);show('#app',false);return}$('#sbUrl').value=cfg.url;client=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const {data:{session}}=await client.auth.getSession();if(session?.user){user=session.user;startApp()}else{show('#connectCard',false);show('#loginCard',true);show('#app',false);pill('待登入')}}
-$('#saveConnect').onclick=async()=>{const url=$('#sbUrl').value.trim().replace(/\/$/,''),key=$('#sbKey').value.trim();if(!url||!key){$('#connectStatus').textContent='請填 Project URL 與 Publishable key';return}localStorage.setItem(CFG,JSON.stringify({url,key}));$('#connectStatus').textContent='已儲存。';await init()};
-$('#loginBtn').onclick=async()=>{const email=$('#email').value.trim(),password=$('#password').value;$('#loginStatus').textContent='登入中…';const {data,error}=await client.auth.signInWithPassword({email,password});if(error){$('#loginStatus').textContent='登入失敗：'+error.message;return}user=data.user;$('#loginStatus').textContent='';await startApp()};
-$('#logoutBtn').onclick=async()=>{await client.auth.signOut();user=null;if(channel)client.removeChannel(channel);show('#app',false);show('#loginCard',true);pill('已登出')};
-$('#captureForm').onsubmit=async e=>{e.preventDefault();const input=$('#captureInput'),content=input.value.trim();if(!content)return;pill('同步中…');const {error}=await client.from('capture_items').insert({user_id:user.id,content,planned_date:$('#dueDate').value||null});if(error){pill('新增失敗','bad');return}input.value='';$('#dueDate').value='';input.focus();await loadItems()};
-window.completeItem=async id=>{await client.from('capture_items').update({is_completed:true}).eq('id',id);const x=items.find(x=>x.id===id);if(x&&current===x.content){current='';localStorage.setItem(NOW,current)}await loadItems()};window.undoItem=async id=>{await client.from('capture_items').update({is_completed:false}).eq('id',id);await loadItems()};window.togglePin=async id=>{const x=items.find(x=>x.id===id);if(x){await client.from('capture_items').update({is_pinned:!x.is_pinned}).eq('id',id);await loadItems()}};window.deleteItem=async id=>{await client.from('capture_items').delete().eq('id',id);await loadItems()};window.setNow=id=>{const x=items.find(x=>x.id===id);if(x){rememberBeforeSwitch(x.content);current=x.content;localStorage.setItem(NOW,current);render();renderFocus()}};
-$('#todayBtn').onclick=()=>$('#dueDate').value=todayISO();$('#clearDateBtn').onclick=()=>$('#dueDate').value='';$('#clearNow').onclick=()=>{current='';localStorage.setItem(NOW,current);render()};$('#clearDone').onclick=async()=>{const ids=items.filter(x=>x.is_completed).map(x=>x.id);if(ids.length){await client.from('capture_items').delete().in('id',ids);await loadItems()}};window.addEventListener('online',()=>loadItems().catch(()=>{}));init();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
-}
-</script>
-<section id="casesView" class="vhide" style="max-width:760px;margin:76px auto 60px;padding:0 18px"><h1>案件</h1><p class="meta">長流程放這裡；首頁仍然只負責快速插單。</p><div class="card"><div class="label">新增案件</div><div style="display:flex;gap:8px"><input id="caseName" style="flex:1" placeholder="例如：苗林新案"><button class="btn" onclick="addCase()">新增</button></div></div><div id="caseList"></div></section><section id="doneView" class="vhide" style="max-width:760px;margin:76px auto;padding:0 18px"><h1>已完成</h1><div class="card meta">歷史完成紀錄下一版再整理；目前仍保留首頁「今天完成」。</div></section><section id="settingsView" class="vhide" style="max-width:760px;margin:76px auto;padding:0 18px"><h1>設定</h1><div class="card meta">帳號與同步沿用原本設定。</div></section><script>
-let cases=[],subs={};
-function drawerOpen(){drawer.classList.add('open');mask.classList.add('open')}function drawerClose(){drawer.classList.remove('open');mask.classList.remove('open')}
-function view(v){drawerClose();let m={home:'homeView',cases:'casesView',done:'doneView',settings:'settingsView'};Object.values(m).forEach(x=>document.getElementById(x)?.classList.add('vhide'));document.getElementById(m[v])?.classList.remove('vhide');['home','cases','done','settings'].forEach(x=>document.getElementById('n-'+x)?.classList.toggle('active',x===v));if(v==='cases')loadCases()}
-async function loadCases(){if(!client||!user)return;let r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('created_at',{ascending:false});if(r.error){caseList.innerHTML='<div class="card">案件讀取失敗</div>';return}cases=r.data||[];for(let c of cases){let q=await client.from('capture_case_subtasks').select('*').eq('case_id',c.id).order('created_at');subs[c.id]=q.data||[]}renderCases()}
-function renderCases(){
-  caseList.innerHTML=cases.length?cases.map(c=>{
-    let a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length;
-    return `<div class="caseCard">
-      <div class="caseHead">
-        <div class="caseTitle">${esc(c.name)}</div>
-        <span class="meta">${a.length?d+'/'+a.length:''}</span>
-        <button class="icon" onclick="document.getElementById('cb-${c.id}').classList.toggle('hidden')">⌄</button>
-        <button class="icon" onclick="delCase('${c.id}')">×</button>
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body class="locked" data-tab="general">
+
+<!-- 登入／連接 -->
+<div id="gate" class="gate">
+  <div class="gateTitle">插單</div>
+  <div class="gateSub">先記下來。不要現在處理。</div>
+  <form class="card hidden" id="connectCard">
+    <div class="sectiontitle">第一次連接</div>
+    <div class="tiny">只需要設定一次。Project URL 已先帶入；請貼上 Supabase 的 <b>Publishable key</b>。不要使用 Secret key。</div>
+    <div class="authgrid">
+      <input id="sbUrl" value="https://xdymhrblfpwrnertsbre.supabase.co">
+      <input id="sbKey" type="password" placeholder="sb_publishable_…">
+      <button class="btn">儲存連接設定</button>
+      <div id="connectStatus" class="status"></div>
+    </div>
+  </form>
+  <form class="card hidden" id="loginCard">
+    <div class="sectiontitle">登入</div>
+    <div class="tiny">使用妳在 Supabase Authentication 建立的 Email 與密碼。</div>
+    <div class="authgrid">
+      <input id="email" type="email" autocomplete="username" placeholder="Email">
+      <input id="password" type="password" autocomplete="current-password" placeholder="密碼">
+      <button class="btn">登入</button>
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </form>
+</div>
+
+<!-- 正在做（全域） -->
+<header class="focusBar">
+  <div class="focusCard" id="focusCard">
+    <span class="focusDot"></span>
+    <div class="focusMain">
+      <div class="focusLabel">正在做</div>
+      <div class="focusText" id="focusText"></div>
+      <div class="focusPrev" id="focusPrev"></div>
+    </div>
+    <div class="focusSide">
+      <button class="btn secondary hidden" id="clearNow" data-act="clearNow">清除</button>
+      <span class="pill" id="cloudPill">未連接</span>
+    </div>
+  </div>
+</header>
+
+<div class="workspace">
+  <section id="col-general" class="col">
+    <div class="colHead"><h2>一般</h2><span class="colHint">先記下來，不要現在處理</span></div>
+    <form class="card" id="captureForm">
+      <div class="label">現在有什麼不能忘？</div>
+      <div class="capture">
+        <input id="captureInput" autocomplete="off" enterkeyhint="done" placeholder="例如：○○居留證申請">
+        <button class="btn">記下</button>
       </div>
-      <div id="cb-${c.id}" class="caseDetail hidden">
+      <div class="dateRow">
+        <label for="dueDate">預計日期</label>
+        <input id="dueDate" type="date">
+        <button type="button" class="btn secondary" data-act="date" data-off="0">今天</button>
+        <button type="button" class="btn secondary" data-act="date" data-off="1">明天</button>
+        <button type="button" class="btn secondary" data-act="date" data-off="">不指定</button>
+      </div>
+    </form>
+    <section class="card">
+      <div class="sectionhead"><div class="sectiontitle">尚未完成</div><span class="count" id="openCount"></span></div>
+      <div id="openList"></div>
+    </section>
+    <section class="card">
+      <div class="sectionhead"><div class="sectiontitle">今天完成</div><button class="btn danger hidden" id="clearDone" data-act="clearDone">清掉完成項</button></div>
+      <div id="doneList"></div>
+      <div class="tiny" id="doneNote"></div>
+    </section>
+  </section>
+
+  <section id="col-cases" class="col">
+    <div class="colHead"><h2>案件</h2><span class="colHint">長流程與子任務</span></div>
+    <form class="card" id="caseForm">
+      <div class="label">新增案件</div>
+      <div class="caseForm"><input id="caseName" autocomplete="off" placeholder="例如：苗林新案"><button class="btn">新增</button></div>
+    </form>
+    <div id="caseList"></div>
+  </section>
+
+  <section id="col-upcoming" class="col">
+    <div class="colHead"><h2>近期</h2><span class="colHint">只看有日期的事</span></div>
+    <div id="upcomingList"></div>
+  </section>
+</div>
+
+<footer class="footer">
+  <span class="who" id="who"></span>
+  <button class="btn ghost" data-act="logout">登出</button>
+  <button class="btn ghost" data-act="reset">重設連接</button>
+  <div>Capture Pad v1.0</div>
+</footer>
+
+<nav class="tabs" aria-label="切換頁面">
+  <button data-act="tab" data-tab="general">一般<span class="n" id="n-general"></span></button>
+  <button data-act="tab" data-tab="cases">案件<span class="n" id="n-cases"></span></button>
+  <button data-act="tab" data-tab="upcoming">近期<span class="n" id="n-upcoming"></span></button>
+</nav>
+
+<script>
+const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases'};
+const $=s=>document.querySelector(s);
+const store={get(k,d=''){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{(v===''||v==null)?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
+let client=null,user=null,channel=null,items=[],cases=[],subs={};
+let current=store.get(K.now),prev=store.get(K.prev);
+let openCases=new Set((()=>{try{return JSON.parse(store.get(K.open,'[]'))}catch{return[]}})());
+
+/* ---------- 小工具 ---------- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const WD='日一二三四五六';
+const stamp=ts=>new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts));
+const parseD=d=>{const[y,m,day]=d.split('-').map(Number);return new Date(y,m-1,day)};
+const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+const todayISO=(off=0)=>{const d=new Date();d.setDate(d.getDate()+off);return iso(d)};
+const dayDiff=d=>{const n=new Date();return Math.round((parseD(d)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5)};
+const isToday=ts=>iso(new Date(ts))===todayISO();
+function dueLabel(d){if(!d)return'';const x=dayDiff(d),dt=parseD(d);if(x===0)return'今天';if(x===1)return'明天';if(x===2)return'後天';if(x===-1)return'昨天';return`${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）`}
+function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
+function show(sel,on){$(sel).classList.toggle('hidden',!on)}
+async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');return false}return true}
+
+/* ---------- 正在做 ---------- */
+function setCurrent(text){if(current&&current!==text){prev=current;store.set(K.prev,prev)}current=text;store.set(K.now,current);renderAll()}
+function clearCurrent(){if(current){prev=current;store.set(K.prev,prev)}current='';store.set(K.now,'');renderAll()}
+function returnPrev(){if(!prev)return;const n=current;current=prev;prev=n||'';store.set(K.now,current);store.set(K.prev,prev);renderAll()}
+function renderFocus(){
+  const on=!!current;
+  $('#focusCard').classList.toggle('on',on);
+  $('#focusText').textContent=on?current:'還沒設定。按任何事項旁的 ▶。';
+  $('#focusPrev').innerHTML=(prev&&prev!==current)?`剛才做到：${esc(prev)} <button class="btn ghost" data-act="back">↩ 回去</button>`:'';
+  show('#clearNow',on);
+}
+
+/* ---------- 一般 ---------- */
+function renderGeneral(){
+  const open=items.filter(x=>!x.is_completed).sort((a,b)=>(b.is_pinned-a.is_pinned)||(a.planned_date||'9999').localeCompare(b.planned_date||'9999')||(new Date(b.updated_at)-new Date(a.updated_at)));
+  const doneAll=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+  const doneToday=doneAll.filter(x=>isToday(x.updated_at));
+  $('#openCount').textContent=open.length?`${open.length} 件`:'';
+  $('#openList').innerHTML=open.length?open.map(x=>{
+    const late=x.planned_date&&dayDiff(x.planned_date)<0,bits=[];
+    if(x.planned_date)bits.push(`<span class="due${late?' late':''}">${late?'逾期':'預計'} ${dueLabel(x.planned_date)}</span>`);
+    bits.push('記錄 '+stamp(x.created_at));
+    if(x.is_pinned)bits.push('已釘選');
+    return `<div class="row${current===x.content?' isNow':''}">
+      <button class="check" data-act="done" data-id="${x.id}" aria-label="完成"></button>
+      <div class="body"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div></div>
+      <div class="actions">
+        <button class="icon" data-act="now" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
+        <button class="icon${x.is_pinned?' pin':''}" data-act="pin" data-id="${x.id}" title="釘選" aria-label="釘選">⌖</button>
+        <button class="icon" data-act="del" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
+      </div></div>`}).join(''):`<div class="empty">很好，暫時沒有東西追著妳跑。</div>`;
+  $('#doneList').innerHTML=doneToday.length?doneToday.map(x=>`<div class="row done">
+      <div class="body"><div class="text">${esc(x.content)}</div><div class="meta">完成 ${stamp(x.updated_at)}</div></div>
+      <button class="icon" data-act="undo" data-id="${x.id}" title="還原" aria-label="還原">↶</button></div>`).join(''):`<div class="empty">今天還沒有完成紀錄。</div>`;
+  const older=doneAll.length-doneToday.length;
+  $('#doneNote').textContent=older?`另有 ${older} 筆較早完成的紀錄。`:'';
+  show('#clearDone',doneAll.length>0);
+  return open.length;
+}
+
+/* ---------- 案件 ---------- */
+function renderCases(){
+  const box=$('#caseList');
+  // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
+  const saved={};box.querySelectorAll('input[id]').forEach(el=>saved[el.id]=el.value);
+  const act=document.activeElement,actId=box.contains(act)?act.id:null;
+  const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
+  if(actId&&act.tagName==='TEXTAREA')saved[actId]=act.value;
+
+  box.innerHTML=cases.length?cases.map(c=>{
+    const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length;
+    return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
+      <summary><span class="caseTitle">${esc(c.name)}</span><span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
+      <div class="caseBody">
         <div class="label">備註</div>
-        <textarea id="note-${c.id}" class="caseNote" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
-        <div style="text-align:right;margin:6px 0 14px"><button class="btn secondary" onclick="saveNote('${c.id}')">儲存備註</button></div>
-
-        <div class="label">子任務</div>
-        ${a.length?a.map(x=>`<div class="sub">
-          <button class="check" style="${x.is_completed?'background:#596456':''}" onclick="togSub('${x.id}',${!x.is_completed})"></button>
-          <div><b style="${x.is_completed?'text-decoration:line-through;color:#999':''}">${esc(x.content)}</b>
-          <div class="submeta">${[x.status?esc(x.status):'',x.task_date?'辦理 '+x.task_date:'',x.expiry_date?'效期 '+x.expiry_date:''].filter(Boolean).join(' · ')}</div></div>
-          <div><button class="icon" onclick="caseNow('${c.id}','${x.id}')">▶</button><button class="icon" onclick="delSub('${x.id}')">×</button></div>
-        </div>`).join(''):'<div class="empty">還沒有子任務。</div>'}
-
-        <div class="label" style="margin-top:14px">新增子任務</div>
+        <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
+        <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
+        <div class="label" style="margin-top:14px">子任務</div>
+        ${a.length?a.map(x=>{
+          const late=!x.is_completed&&x.expiry_date&&dayDiff(x.expiry_date)<0;
+          const meta=[x.status?esc(x.status):'',x.task_date?`辦理 ${dueLabel(x.task_date)}`:'',x.expiry_date?`<span class="due${late?' late':''}">${late?'已過效期':'效期'} ${dueLabel(x.expiry_date)}</span>`:''].filter(Boolean).join(' · ');
+          return `<div class="subRow${x.is_completed?' done':''}">
+            <button class="check${x.is_completed?' on':''}" data-act="sub-toggle" data-cid="${c.id}" data-id="${x.id}" aria-label="${x.is_completed?'改回未完成':'完成'}"></button>
+            <div class="body"><div class="text">${esc(x.content)}</div>${meta?`<div class="meta">${meta}</div>`:''}</div>
+            <div class="actions">
+              <button class="icon" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
+              <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
+            </div></div>`}).join(''):'<div class="empty">還沒有子任務。</div>'}
+        <div class="label" style="margin-top:16px">新增子任務</div>
         <div class="subform">
-          <div class="fieldBlock"><div class="fieldCaption">子任務</div><input id="ct-${c.id}" placeholder="例如：求才送審"></div>
-          <div class="fieldBlock"><div class="fieldCaption">狀態</div><input id="cs-${c.id}" placeholder="例如：審查中"></div>
+          <div class="field"><span class="fieldCaption">子任務</span><input id="ct-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才送審"></div>
+          <div class="field"><span class="fieldCaption">狀態</span><input id="cs-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：審查中"></div>
           <div class="fieldRow">
-            <div class="fieldBlock"><div class="fieldCaption">辦理日／預計日</div><input id="cd-${c.id}" type="date"></div>
-            <div class="fieldBlock"><div class="fieldCaption">效期／截止日</div><input id="ce-${c.id}" type="date"></div>
+            <div class="field"><span class="fieldCaption">辦理日／預計日</span><input id="cd-${c.id}" type="date"></div>
+            <div class="field"><span class="fieldCaption">效期／截止日</span><input id="ce-${c.id}" type="date"></div>
           </div>
         </div>
-        <button class="btn" style="margin-top:10px;height:38px" onclick="addSub('${c.id}')">＋ 新增子任務</button>
-      </div>
-    </div>`
-  }).join(''):'<div class="card empty">還沒有案件。</div>'
-}
-async function addCase(){let name=caseName.value.trim();if(!name)return;let r=await client.from('capture_cases').insert({user_id:user.id,name});if(r.error)return pill('案件新增失敗','bad');caseName.value='';loadCases()}
-async function delCase(id){if(confirm('刪除案件與所有子任務？')){await client.from('capture_cases').delete().eq('id',id);loadCases()}}
-async function saveNote(id){await client.from('capture_cases').update({notes:document.getElementById('note-'+id).value}).eq('id',id);pill('● 已同步','ok')}
-async function addSub(id){let content=document.getElementById('ct-'+id).value.trim();if(!content)return;let r=await client.from('capture_case_subtasks').insert({user_id:user.id,case_id:id,content,status:document.getElementById('cs-'+id).value||null,task_date:document.getElementById('cd-'+id).value||null,expiry_date:document.getElementById('ce-'+id).value||null});if(r.error)return pill('子任務新增失敗','bad');loadCases()}
-async function togSub(id,v){await client.from('capture_case_subtasks').update({is_completed:v}).eq('id',id);loadCases()}async function delSub(id){await client.from('capture_case_subtasks').delete().eq('id',id);loadCases()}
-function caseNow(cid,sid){let c=cases.find(x=>x.id===cid),x=(subs[cid]||[]).find(y=>y.id===sid);if(c&&x){rememberBeforeSwitch(c.name+' › '+x.content);current=c.name+' › '+x.content;localStorage.setItem(NOW,current);render();renderFocus();if(innerWidth<981)view('home')}}
-</script>
-<script>
-(function(){
-  function normalizeViews(){
-    const ids=['casesView','doneView','settingsView'];
-    ids.forEach(id=>document.getElementById(id)?.classList.add('vhide'));
-    document.getElementById('homeView')?.classList.remove('vhide');
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',normalizeViews);
-  else normalizeViews();
-})();
-</script>
+        <div class="caseFoot">
+          <button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>
+          <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
+        </div>
+      </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
 
-<script>
-const PREVNOW='capturePadPrevNow';
-function workspaceSync(){
-  const desktop=innerWidth>=981;
-  const a=document.getElementById('homeView'),b=document.getElementById('casesView');
-  if(desktop){
-    if(a&&a.parentElement!==document.getElementById('gm'))document.getElementById('gm').appendChild(a);
-    if(b&&b.parentElement!==document.getElementById('cm'))document.getElementById('cm').appendChild(b);
-    a?.classList.remove('vhide'); b?.classList.remove('vhide');
-    if(typeof loadCases==='function')loadCases();
-  }
-  renderFocus();setTimeout(renderUpcoming,180);
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
+  if(actId){const el=document.getElementById(actId);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
+  return cases.length;
 }
-function renderFocus(){if(document.getElementById('focusText'))focusText.textContent=current||'目前沒有設定。';let p=localStorage.getItem(PREVNOW)||'';if(focusPrev)focusPrev.innerHTML=p?`剛才做到：${esc(p)} <button class="smallBtn" onclick="returnPrev()">↩ 回去</button>`:''}
-function rememberBeforeSwitch(n){if(current&&current!==n)localStorage.setItem(PREVNOW,current)}
-function returnPrev(){let p=localStorage.getItem(PREVNOW);if(!p)return;let n=current;current=p;localStorage.setItem(NOW,current);n?localStorage.setItem(PREVNOW,n):localStorage.removeItem(PREVNOW);render();renderFocus()}
-function renderUpcoming(){let box=document.getElementById('upcomingList');if(!box)return;let u=[];(items||[]).filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項'}));(cases||[]).forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed&&(x.task_date||x.expiry_date)).forEach(x=>{if(x.task_date)u.push({d:x.task_date,t:c.name+' › '+x.content,m:x.status||'辦理／預計日'});if(x.expiry_date)u.push({d:x.expiry_date,t:c.name+' › '+x.content,m:'效期'})}));u.sort((a,b)=>a.d.localeCompare(b.d));box.innerHTML=u.length?u.slice(0,30).map(x=>`<div class="upcomingCard"><div class="upDate">${esc(x.d)}</div><div class="upTitle">${esc(x.t)}</div><div class="upMeta">${esc(x.m)}</div></div>`).join(''):'<div class="card empty">目前沒有有日期的事項。</div>'}
-addEventListener('resize',workspaceSync);addEventListener('load',()=>setTimeout(workspaceSync,300));
-</script></body></html>
+
+/* ---------- 近期 ---------- */
+function renderUpcoming(){
+  const u=[];
+  items.filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項'}));
+  cases.forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{
+    const t=c.name+' › '+x.content;
+    if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理／預計日`:'辦理／預計日'});
+    if(x.expiry_date)u.push({d:x.expiry_date,t,m:'效期／截止日'});
+  }));
+  u.sort((a,b)=>a.d.localeCompare(b.d));
+  const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
+  let html='';
+  groups.forEach(([name,f,cls])=>{
+    const g=u.filter(x=>f(dayDiff(x.d)));if(!g.length)return;
+    html+=`<div class="upGroup ${cls}">${name}<span class="n">${g.length}</span></div>`+g.slice(0,40).map(x=>`<div class="upItem ${cls}">
+      <div class="upDate">${dueLabel(x.d)}</div>
+      <div class="body"><div class="upTitle">${esc(x.t)}</div><div class="meta">${esc(x.m)}</div></div>
+      <button class="icon" data-act="up-now" data-text="${esc(x.t)}" title="設為正在做" aria-label="設為正在做">▶</button></div>`).join('');
+  });
+  $('#upcomingList').innerHTML=html||'<div class="card empty">目前沒有有日期的事項。新增時選個日期，就會出現在這裡。</div>';
+  return u.filter(x=>dayDiff(x.d)<=0).length;
+}
+
+function renderAll(){
+  renderFocus();
+  const nOpen=renderGeneral(),nCases=renderCases(),nUrgent=renderUpcoming();
+  $('#n-general').textContent=nOpen||'';
+  $('#n-cases').textContent=nCases||'';
+  const up=$('#n-upcoming');up.textContent=nUrgent||'';up.className='n'+(nUrgent?' late':'');
+}
+
+/* ---------- 同步 ---------- */
+async function loadItems(){const {data,error}=await client.from('capture_items').select('*').order('created_at',{ascending:true});if(error)throw error;items=data||[]}
+async function loadCases(){
+  const r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('created_at',{ascending:false});
+  if(r.error)throw r.error;
+  const list=r.data||[],next={};list.forEach(c=>next[c.id]=[]);
+  if(list.length){
+    const q=await client.from('capture_case_subtasks').select('*').in('case_id',list.map(c=>c.id)).order('created_at',{ascending:true});
+    if(q.error)throw q.error;
+    (q.data||[]).forEach(s=>(next[s.case_id]||(next[s.case_id]=[])).push(s));
+  }
+  cases=list;subs=next;
+}
+async function refresh(which='all'){
+  if(!client||!user)return;
+  pill('同步中…');
+  try{if(which!=='cases')await loadItems();if(which!=='items')await loadCases();pill('● 已同步','ok')}
+  catch(e){console.error(e);pill('同步失敗','bad')}
+  renderAll();
+}
+let rt;function softRefresh(){clearTimeout(rt);rt=setTimeout(()=>refresh('all'),300)}
+function subscribe(){
+  if(channel)client.removeChannel(channel);
+  channel=client.channel('capture-'+user.id);
+  ['capture_items','capture_cases','capture_case_subtasks'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t,filter:`user_id=eq.${user.id}`},softRefresh));
+  channel.subscribe();
+}
+async function migrateLocal(){
+  let raw=[];try{raw=JSON.parse(store.get(K.items,'[]'))}catch{}
+  if(!raw.length)return;
+  const existing=new Set(items.map(x=>x.id));
+  const payload=raw.filter(x=>!existing.has(x.id)).map(x=>({id:x.id,user_id:user.id,content:x.text,planned_date:x.due||null,is_pinned:!!x.pin,is_completed:!!x.done,is_active:false,created_at:new Date(x.ts||Date.now()).toISOString(),updated_at:new Date(x.updated||x.ts||Date.now()).toISOString()}));
+  if(!payload.length){store.set(K.items,'');return}
+  const {error}=await client.from('capture_items').insert(payload);
+  if(!error){store.set(K.items,'');await refresh('items')}
+}
+
+/* ---------- 登入流程 ---------- */
+function gate(which){
+  document.body.classList.add('locked');show('#gate',true);
+  show('#connectCard',which==='connect');show('#loginCard',which==='login');
+  pill(which==='login'?'待登入':'未連接');
+}
+async function startApp(){
+  document.body.classList.remove('locked');show('#gate',false);
+  $('#who').textContent=user.email||'';
+  await refresh('all');await migrateLocal();subscribe();
+}
+async function init(){
+  let cfg={};try{cfg=JSON.parse(store.get(K.cfg,'{}'))}catch{}
+  if(!cfg.url||!cfg.key){gate('connect');return}
+  $('#sbUrl').value=cfg.url;
+  client=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const {data:{session}}=await client.auth.getSession();
+  if(session?.user){user=session.user;startApp()}else gate('login');
+}
+$('#connectCard').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const url=$('#sbUrl').value.trim().replace(/\/$/,''),key=$('#sbKey').value.trim();
+  if(!url||!key){$('#connectStatus').textContent='請填 Project URL 與 Publishable key。';return}
+  if(key.startsWith('sb_secret')){$('#connectStatus').textContent='這是 Secret key，請改貼 Publishable key。';return}
+  store.set(K.cfg,JSON.stringify({url,key}));$('#connectStatus').textContent='已儲存。';await init();
+});
+$('#loginCard').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('#email').value.trim(),password=$('#password').value;
+  $('#loginStatus').textContent='登入中…';
+  const {data,error}=await client.auth.signInWithPassword({email,password});
+  if(error){$('#loginStatus').textContent='登入失敗：'+error.message;return}
+  user=data.user;$('#loginStatus').textContent='';await startApp();
+});
+
+/* ---------- 新增 ---------- */
+$('#captureForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const input=$('#captureInput'),content=input.value.trim();
+  if(!content){input.focus();return}
+  const planned_date=$('#dueDate').value||null;
+  input.value='';$('#dueDate').value='';input.focus();
+  if(!await run(client.from('capture_items').insert({user_id:user.id,content,planned_date}))){input.value=content;return}
+  refresh('items');
+});
+$('#caseForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const el=$('#caseName'),name=el.value.trim();if(!name){el.focus();return}
+  el.value='';
+  if(!await run(client.from('capture_cases').insert({user_id:user.id,name}))){el.value=name;return}
+  refresh('cases');
+});
+async function addSub(cid){
+  const g=p=>document.getElementById(p+cid),ct=g('ct-');
+  const content=ct.value.trim();if(!content){ct.focus();return}
+  const row={user_id:user.id,case_id:cid,content,status:g('cs-').value.trim()||null,task_date:g('cd-').value||null,expiry_date:g('ce-').value||null};
+  ['ct-','cs-','cd-','ce-'].forEach(p=>g(p).value='');
+  if(!await run(client.from('capture_case_subtasks').insert(row))){ct.value=content;return}
+  refresh('cases');
+}
+
+/* ---------- 所有按鈕 ---------- */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const {act,id,cid}=b.dataset;
+  const it=items.find(x=>x.id===id);
+  const sub=cid?(subs[cid]||[]).find(x=>x.id===id):null;
+  const cs=cid?cases.find(x=>x.id===cid):null;
+  switch(act){
+    case 'tab':setTab(b.dataset.tab);break;
+    case 'date':$('#dueDate').value=b.dataset.off===''?'':todayISO(+b.dataset.off);break;
+    case 'now':if(it)setCurrent(it.content);break;
+    case 'sub-now':if(cs&&sub)setCurrent(cs.name+' › '+sub.content);break;
+    case 'up-now':setCurrent(b.dataset.text);break;
+    case 'back':returnPrev();break;
+    case 'clearNow':clearCurrent();break;
+    case 'done':
+      if(!it)break;
+      if(current===it.content){current='';store.set(K.now,'')}
+      it.is_completed=true;it.updated_at=new Date().toISOString();renderAll();
+      await run(client.from('capture_items').update({is_completed:true}).eq('id',id));refresh('items');break;
+    case 'undo':
+      if(!it)break;it.is_completed=false;renderAll();
+      await run(client.from('capture_items').update({is_completed:false}).eq('id',id));refresh('items');break;
+    case 'pin':
+      if(!it)break;it.is_pinned=!it.is_pinned;renderAll();
+      await run(client.from('capture_items').update({is_pinned:it.is_pinned}).eq('id',id));refresh('items');break;
+    case 'del':
+      if(it&&confirm(`刪除「${it.content}」？`)&&await run(client.from('capture_items').delete().eq('id',id)))refresh('items');break;
+    case 'clearDone':{
+      const ids=items.filter(x=>x.is_completed).map(x=>x.id);
+      if(ids.length&&confirm(`刪除全部 ${ids.length} 筆已完成紀錄？刪除後無法復原。`)&&await run(client.from('capture_items').delete().in('id',ids)))refresh('items');
+      break;}
+    case 'sub-toggle':
+      if(!sub)break;sub.is_completed=!sub.is_completed;renderAll();
+      await run(client.from('capture_case_subtasks').update({is_completed:sub.is_completed}).eq('id',id));refresh('cases');break;
+    case 'sub-del':
+      if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
+    case 'sub-add':addSub(cid);break;
+    case 'case-del':
+      if(cs&&confirm(`刪除案件「${cs.name}」與所有子任務？`)&&await run(client.from('capture_cases').delete().eq('id',cid))){openCases.delete(cid);store.set(K.open,JSON.stringify([...openCases]));refresh('cases')}
+      break;
+    case 'logout':
+      await client?.auth.signOut();if(channel)client.removeChannel(channel);
+      user=null;channel=null;items=[];cases=[];subs={};gate('login');pill('已登出');break;
+    case 'reset':
+      if(confirm('清除這台裝置的連接設定並重新設定？（雲端資料不受影響）')){store.set(K.cfg,'');location.reload()}break;
+  }
+});
+const caseList=$('#caseList');
+caseList.addEventListener('toggle',e=>{
+  const d=e.target;if(!d.matches||!d.matches('details.caseCard'))return;
+  d.open?openCases.add(d.dataset.cid):openCases.delete(d.dataset.cid);
+  store.set(K.open,JSON.stringify([...openCases]));
+},true);
+caseList.addEventListener('focusout',async e=>{
+  const t=e.target;if(!t.dataset||!t.dataset.note)return;
+  const c=cases.find(x=>x.id===t.dataset.note);if(!c||(c.notes||'')===t.value)return;
+  c.notes=t.value;
+  if(await run(client.from('capture_cases').update({notes:t.value}).eq('id',c.id)))pill('● 備註已儲存','ok');
+});
+caseList.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();addSub(e.target.dataset.enter)}
+});
+
+function setTab(t){
+  if(!['general','cases','upcoming'].includes(t))t='general';
+  document.body.dataset.tab=t;store.set(K.tab,t);
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  window.scrollTo({top:0});
+}
+
+setTab(store.get(K.tab,'general'));
+renderFocus();
+addEventListener('online',softRefresh);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user)softRefresh()});
+init();
+
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
