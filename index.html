@@ -24,7 +24,38 @@
   #homeView{padding-top:54px!important}
 }
 
-.workspace{max-width:1500px;margin:18px auto 70px;padding:0 22px;display:grid;grid-template-columns:1fr 1.15fr .9fr;gap:18px;align-items:start}.workspaceCol{min-width:0}.colHead{display:flex;justify-content:space-between;align-items:end;margin-bottom:10px}.colHead h2{margin:0;font-size:21px}.colHint{font-size:11px;color:var(--muted)}.focusBar{max-width:1500px;margin:72px auto 0;padding:0 22px}.focusCard{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px 16px;display:flex;gap:12px;align-items:center}.focusText{font-weight:800}.focusPrev{font-size:12px;color:var(--muted);margin-left:auto}.upcomingCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:9px}.upDate{font-size:12px;font-weight:800;color:var(--accent)}.upTitle{font-size:14px;font-weight:750;margin-top:4px}.upMeta{font-size:11px;color:var(--muted);margin-top:3px}@media(min-width:981px){.menuBtn{display:none!important}#homeView,#casesView{display:block!important;max-width:none!important;width:auto!important;margin:0!important;padding:0!important}#homeView>.header,#homeView>header,#casesView>h1,#casesView>p,#casesView>.card:first-of-type{display:none!important}#doneView,#settingsView{display:none!important}}@media(max-width:980px){.workspace{display:block;padding:0 14px}.workspaceCol{display:none}.workspaceCol.mobileActive{display:block}.focusBar{margin-top:72px;padding:0 14px}.focusCard{flex-wrap:wrap}.focusPrev{width:100%;margin-left:0}}</style></head><body><div class="focusBar"><div class="focusCard"><div style="flex:1"><div class="meta">正在做</div><div id="focusText" class="focusText">目前沒有設定。</div></div><div id="focusPrev" class="focusPrev"></div></div></div><div class="workspace"><section id="generalCol" class="workspaceCol mobileActive"><div class="colHead"><h2>一般</h2><span class="colHint">快速插單</span></div><div id="gm"></div></section><section id="casesCol" class="workspaceCol"><div class="colHead"><h2>案件</h2><span class="colHint">長流程與子任務</span></div><div id="cm"></div></section><section id="upcomingCol" class="workspaceCol"><div class="colHead"><h2>近期</h2><span class="colHint">只看有日期的事</span></div><div id="upcomingList"></div></section></div><button class="menuBtn" onclick="drawerOpen()">☰</button><div id="mask" class="mask" onclick="drawerClose()"></div><aside id="drawer" class="drawer"><div class="brand">插單<div style="font-size:12px;color:var(--muted);font-weight:400">Capture Pad</div></div><div class="nav"><button id="n-home" class="active" onclick="view('home')">○　一般</button><button id="n-cases" onclick="view('cases')">▣　案件</button><button id="n-done" onclick="view('done')">◷　近期</button><button id="n-settings" onclick="view('settings')">⚙　設定</button></div><div class="drawerFoot">Capture Pad v0.9 · Workspace</div></aside><main>
+.workspace{max-width:1500px;margin:18px auto 70px;padding:0 22px;display:grid;grid-template-columns:1fr 1.15fr .9fr;gap:18px;align-items:start}.workspaceCol{min-width:0}.colHead{display:flex;justify-content:space-between;align-items:end;margin-bottom:10px}.colHead h2{margin:0;font-size:21px}.colHint{font-size:11px;color:var(--muted)}.focusBar{max-width:1500px;margin:72px auto 0;padding:0 22px}.focusCard{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px 16px;display:flex;gap:12px;align-items:center}.focusText{font-weight:800}.focusPrev{font-size:12px;color:var(--muted);margin-left:auto}.upcomingCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:9px}.upDate{font-size:12px;font-weight:800;color:var(--accent)}.upTitle{font-size:14px;font-weight:750;margin-top:4px}.upMeta{font-size:11px;color:var(--muted);margin-top:3px}@media(min-width:981px){.menuBtn{display:none!important}#homeView,#casesView{display:block!important;max-width:none!important;width:auto!important;margin:0!important;padding:0!important}#homeView>.header,#homeView>header,#casesView>h1,#casesView>p,#casesView>.card:first-of-type{display:none!important}#doneView,#settingsView{display:none!important}}@media(max-width:980px){.workspace{display:block;padding:0 14px}.workspaceCol{display:none}.workspaceCol.mobileActive{display:block}.focusBar{margin-top:72px;padding:0 14px}.focusCard{flex-wrap:wrap}.focusPrev{width:100%;margin-left:0}}
+/* v0.9.1 layout cleanup */
+body{overflow-x:hidden}
+.focusBar{margin-top:28px}
+.workspace{margin-top:16px;grid-template-columns:minmax(300px,.95fr) minmax(390px,1.18fr) minmax(300px,.95fr)}
+#generalCol #homeView{max-width:none;margin:0;padding:0}
+#generalCol #homeView .top{margin:0 0 12px}
+#generalCol #homeView .title{font-size:21px}
+#generalCol #homeView .sub{display:none}
+#generalCol #homeView #app>.card:nth-of-type(2){display:none} /* duplicate '正在做' is now global */
+#generalCol #homeView .footer{display:none}
+#casesCol #casesView{max-width:none!important;margin:0!important;padding:0!important}
+#casesCol #casesView>h1,#casesCol #casesView>p{display:none!important}
+#casesCol #casesView>.card:first-of-type{display:block!important}
+.caseCard{padding:14px}
+.caseDetail{padding-top:14px}
+.caseDetail .label{margin-top:10px}
+.subform{grid-template-columns:1fr!important;gap:9px}
+.fieldBlock{display:grid;gap:5px}
+.fieldCaption{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fieldRow .fieldBlock{min-width:0}
+#upcomingCol .card{margin-bottom:10px}
+@media(max-width:980px){
+  .focusBar{margin-top:70px}
+  #homeView{padding-top:0!important}
+  #generalCol #homeView .top{display:flex!important}
+  #generalCol #homeView .title{font-size:26px}
+  #generalCol #homeView .sub{display:block}
+  .fieldRow{grid-template-columns:1fr}
+}
+</style></head><body><div class="focusBar"><div class="focusCard"><div style="flex:1"><div class="meta">正在做</div><div id="focusText" class="focusText">目前沒有設定。</div></div><div id="focusPrev" class="focusPrev"></div></div></div><div class="workspace"><section id="generalCol" class="workspaceCol mobileActive"><div class="colHead"><h2>一般</h2><span class="colHint">快速插單</span></div><div id="gm"></div></section><section id="casesCol" class="workspaceCol"><div class="colHead"><h2>案件</h2><span class="colHint">長流程與子任務</span></div><div id="cm"></div></section><section id="upcomingCol" class="workspaceCol"><div class="colHead"><h2>近期</h2><span class="colHint">只看有日期的事</span></div><div id="upcomingList"></div></section></div><button class="menuBtn" onclick="drawerOpen()">☰</button><div id="mask" class="mask" onclick="drawerClose()"></div><aside id="drawer" class="drawer"><div class="brand">插單<div style="font-size:12px;color:var(--muted);font-weight:400">Capture Pad</div></div><div class="nav"><button id="n-home" class="active" onclick="view('home')">○　一般</button><button id="n-cases" onclick="view('cases')">▣　案件</button><button id="n-done" onclick="view('done')">◷　近期</button><button id="n-settings" onclick="view('settings')">⚙　設定</button></div><div class="drawerFoot">Capture Pad v0.9.1 · Layout</div></aside><main id="homeView">
 <div class="top"><div><div class="title">插單</div><div class="sub">先記下來。不要現在處理。</div></div><div><div class="count" id="count"></div><div class="pill" id="cloudPill">未連接</div></div></div>
 <section class="card" id="connectCard"><div class="sectiontitle">第一次連接</div><div class="tiny">只需要設定一次。Project URL 已先帶入；請貼上 Supabase 的 <b>Publishable key</b>。不要使用 Secret key。</div><div class="authgrid" style="margin-top:10px"><input id="sbUrl" value="https://xdymhrblfpwrnertsbre.supabase.co"><input id="sbKey" type="password" placeholder="sb_publishable_…"><button class="btn secondary" id="saveConnect">儲存連接設定</button><div id="connectStatus" class="status"></div></div></section>
 <section class="card hidden" id="loginCard"><div class="sectiontitle">登入 Capture Pad</div><div class="tiny">使用妳剛才在 Supabase Authentication 建立的 Email 與密碼。</div><div class="authgrid" style="margin-top:10px"><input id="email" type="email" autocomplete="username" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><button class="btn" id="loginBtn" style="height:44px">登入</button><div id="loginStatus" class="status"></div></div></section>
@@ -34,7 +65,7 @@
 <section class="card"><div class="sectionhead"><div class="sectiontitle">尚未完成</div><span class="count" id="openCount"></span></div><div id="openList"></div></section>
 <section class="card"><div class="sectionhead"><div class="sectiontitle">今天完成</div><button class="btn danger" id="clearDone">清掉完成項</button></div><div id="doneList"></div></section>
 <section class="card"><div class="statusrow"><div><div class="sectiontitle">帳號</div><div id="who" class="tiny"></div></div><button class="btn secondary" id="logoutBtn">登出</button></div></section>
-</div><div class="footer">Capture Pad v0.9 · Workspace + PWA</div></main>
+</div><div class="footer">Capture Pad v0.9.1 · Layout</div></main>
 <script>
 const LOCAL='capturePad.v01.items', NOW='capturePad.v01.now', CFG='capturePad.v04.connection'; const $=s=>document.querySelector(s); let client=null,user=null,items=[],current=localStorage.getItem(NOW)||'',channel=null;
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))} function stamp(ts){return new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts))} function dueLabel(d){if(!d)return'';const[y,m,day]=d.split('-').map(Number),dt=new Date(y,m-1,day),n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()),diff=Math.round((dt-t)/86400000);return diff===0?'今天':diff===1?'明天':diff===-1?'昨天':`${m}/${day}`} function todayISO(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
@@ -64,7 +95,43 @@ let cases=[],subs={};
 function drawerOpen(){drawer.classList.add('open');mask.classList.add('open')}function drawerClose(){drawer.classList.remove('open');mask.classList.remove('open')}
 function view(v){drawerClose();let m={home:'homeView',cases:'casesView',done:'doneView',settings:'settingsView'};Object.values(m).forEach(x=>document.getElementById(x)?.classList.add('vhide'));document.getElementById(m[v])?.classList.remove('vhide');['home','cases','done','settings'].forEach(x=>document.getElementById('n-'+x)?.classList.toggle('active',x===v));if(v==='cases')loadCases()}
 async function loadCases(){if(!client||!user)return;let r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('created_at',{ascending:false});if(r.error){caseList.innerHTML='<div class="card">案件讀取失敗</div>';return}cases=r.data||[];for(let c of cases){let q=await client.from('capture_case_subtasks').select('*').eq('case_id',c.id).order('created_at');subs[c.id]=q.data||[]}renderCases()}
-function renderCases(){caseList.innerHTML=cases.length?cases.map(c=>{let a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length;return `<div class="caseCard"><div class="caseHead"><div class="caseTitle">${esc(c.name)}</div><span class="meta">${a.length?d+'/'+a.length:''}</span><button class="icon" onclick="document.getElementById('cb-${c.id}').classList.toggle('hidden')">⌄</button><button class="icon" onclick="delCase('${c.id}')">×</button></div><div id="cb-${c.id}" class="caseDetail hidden"><div class="label">備註</div><textarea id="note-${c.id}" class="caseNote">${esc(c.notes||'')}</textarea><div style="text-align:right;margin:6px 0 14px"><button class="btn secondary" onclick="saveNote('${c.id}')">儲存備註</button></div><div class="label">子任務</div>${a.map(x=>`<div class="sub"><button class="check" style="${x.is_completed?'background:#596456':''}" onclick="togSub('${x.id}',${!x.is_completed})"></button><div><b style="${x.is_completed?'text-decoration:line-through;color:#999':''}">${esc(x.content)}</b><div class="submeta">${[x.status?esc(x.status):'',x.task_date?'辦理 '+x.task_date:'',x.expiry_date?'效期 '+x.expiry_date:''].filter(Boolean).join(' · ')}</div></div><div><button class="icon" onclick="caseNow('${c.id}','${x.id}')">▶</button><button class="icon" onclick="delSub('${x.id}')">×</button></div></div>`).join('')}<div class="label">新增子任務</div><div class="subform"><input class="wide" id="ct-${c.id}" placeholder="例如：求才送審"><input id="cs-${c.id}" placeholder="狀態：審查中"><input id="cd-${c.id}" type="date"><input id="ce-${c.id}" type="date"></div><button class="btn" style="margin-top:8px" onclick="addSub('${c.id}')">＋ 新增子任務</button></div></div>`}).join(''):'<div class="card empty">還沒有案件。</div>'}
+function renderCases(){
+  caseList.innerHTML=cases.length?cases.map(c=>{
+    let a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length;
+    return `<div class="caseCard">
+      <div class="caseHead">
+        <div class="caseTitle">${esc(c.name)}</div>
+        <span class="meta">${a.length?d+'/'+a.length:''}</span>
+        <button class="icon" onclick="document.getElementById('cb-${c.id}').classList.toggle('hidden')">⌄</button>
+        <button class="icon" onclick="delCase('${c.id}')">×</button>
+      </div>
+      <div id="cb-${c.id}" class="caseDetail hidden">
+        <div class="label">備註</div>
+        <textarea id="note-${c.id}" class="caseNote" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
+        <div style="text-align:right;margin:6px 0 14px"><button class="btn secondary" onclick="saveNote('${c.id}')">儲存備註</button></div>
+
+        <div class="label">子任務</div>
+        ${a.length?a.map(x=>`<div class="sub">
+          <button class="check" style="${x.is_completed?'background:#596456':''}" onclick="togSub('${x.id}',${!x.is_completed})"></button>
+          <div><b style="${x.is_completed?'text-decoration:line-through;color:#999':''}">${esc(x.content)}</b>
+          <div class="submeta">${[x.status?esc(x.status):'',x.task_date?'辦理 '+x.task_date:'',x.expiry_date?'效期 '+x.expiry_date:''].filter(Boolean).join(' · ')}</div></div>
+          <div><button class="icon" onclick="caseNow('${c.id}','${x.id}')">▶</button><button class="icon" onclick="delSub('${x.id}')">×</button></div>
+        </div>`).join(''):'<div class="empty">還沒有子任務。</div>'}
+
+        <div class="label" style="margin-top:14px">新增子任務</div>
+        <div class="subform">
+          <div class="fieldBlock"><div class="fieldCaption">子任務</div><input id="ct-${c.id}" placeholder="例如：求才送審"></div>
+          <div class="fieldBlock"><div class="fieldCaption">狀態</div><input id="cs-${c.id}" placeholder="例如：審查中"></div>
+          <div class="fieldRow">
+            <div class="fieldBlock"><div class="fieldCaption">辦理日／預計日</div><input id="cd-${c.id}" type="date"></div>
+            <div class="fieldBlock"><div class="fieldCaption">效期／截止日</div><input id="ce-${c.id}" type="date"></div>
+          </div>
+        </div>
+        <button class="btn" style="margin-top:10px;height:38px" onclick="addSub('${c.id}')">＋ 新增子任務</button>
+      </div>
+    </div>`
+  }).join(''):'<div class="card empty">還沒有案件。</div>'
+}
 async function addCase(){let name=caseName.value.trim();if(!name)return;let r=await client.from('capture_cases').insert({user_id:user.id,name});if(r.error)return pill('案件新增失敗','bad');caseName.value='';loadCases()}
 async function delCase(id){if(confirm('刪除案件與所有子任務？')){await client.from('capture_cases').delete().eq('id',id);loadCases()}}
 async function saveNote(id){await client.from('capture_cases').update({notes:document.getElementById('note-'+id).value}).eq('id',id);pill('● 已同步','ok')}
@@ -86,7 +153,17 @@ function caseNow(cid,sid){let c=cases.find(x=>x.id===cid),x=(subs[cid]||[]).find
 
 <script>
 const PREVNOW='capturePadPrevNow';
-function workspaceSync(){if(innerWidth>=981){let a=document.getElementById('homeView'),b=document.getElementById('casesView');if(a&&a.parentElement!==gm)gm.appendChild(a);if(b&&b.parentElement!==cm)cm.appendChild(b);a?.classList.remove('vhide');b?.classList.remove('vhide');if(typeof loadCases==='function')loadCases()}renderFocus();setTimeout(renderUpcoming,150)}
+function workspaceSync(){
+  const desktop=innerWidth>=981;
+  const a=document.getElementById('homeView'),b=document.getElementById('casesView');
+  if(desktop){
+    if(a&&a.parentElement!==document.getElementById('gm'))document.getElementById('gm').appendChild(a);
+    if(b&&b.parentElement!==document.getElementById('cm'))document.getElementById('cm').appendChild(b);
+    a?.classList.remove('vhide'); b?.classList.remove('vhide');
+    if(typeof loadCases==='function')loadCases();
+  }
+  renderFocus();setTimeout(renderUpcoming,180);
+}
 function renderFocus(){if(document.getElementById('focusText'))focusText.textContent=current||'目前沒有設定。';let p=localStorage.getItem(PREVNOW)||'';if(focusPrev)focusPrev.innerHTML=p?`剛才做到：${esc(p)} <button class="smallBtn" onclick="returnPrev()">↩ 回去</button>`:''}
 function rememberBeforeSwitch(n){if(current&&current!==n)localStorage.setItem(PREVNOW,current)}
 function returnPrev(){let p=localStorage.getItem(PREVNOW);if(!p)return;let n=current;current=p;localStorage.setItem(NOW,current);n?localStorage.setItem(PREVNOW,n):localStorage.removeItem(PREVNOW);render();renderFocus()}
