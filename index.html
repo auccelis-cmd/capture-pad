@@ -123,7 +123,15 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .subEdit{display:grid;gap:9px;background:var(--raised);border:1px solid var(--line);border-radius:11px;padding:12px;margin:0 0 10px 30px}
 .subEdit input,.subEdit textarea{background:var(--surface)}
 .subEdit .caseFoot{margin-top:2px}
-.ruleHint{font-weight:500;color:var(--accent);margin-left:4px}
+.ruleHint{font-weight:500;color:var(--accent);margin-left:6px}
+select{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:9px 10px;font-size:16px;width:100%;min-width:0;outline:none}
+select:focus{border-color:var(--accent)}
+.subEdit select{background:var(--surface)}
+.subform:empty{display:none}
+.tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:600;color:var(--accent);border:1px solid rgba(143,181,161,.35);border-radius:5px;padding:0 5px;vertical-align:2px;line-height:1.6}
+.expCap{display:flex;align-items:center;gap:2px}
+.plusBtn{margin-left:auto;border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:6px;font-size:11px;font-weight:600;padding:1px 7px;line-height:1.6}
+.plusBtn:hover{border-color:var(--accent)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .chip{border:1px dashed #48524d;background:transparent;border-radius:999px;padding:4px 11px;font-size:12px;color:var(--muted)}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
@@ -171,7 +179,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   .fieldRow{grid-template-columns:1fr}
   .subEdit{margin-left:0}
 }
-@media(min-width:981px){input,textarea{font-size:14px}.capture input{font-size:15px}}
+@media(min-width:981px){input,textarea,select{font-size:14px}.capture input{font-size:15px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -266,7 +274,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.2</div>
+  <div>Capture Pad v1.3.1</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -293,16 +301,33 @@ const todayISO=(off=0)=>{const d=new Date();d.setDate(d.getDate()+off);return is
 const dayDiff=d=>{const n=new Date();return Math.round((parseD(d)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5)};
 const isToday=ts=>iso(new Date(ts))===todayISO();
 function dueLabel(d){if(!d)return'';const x=dayDiff(d),dt=parseD(d);if(x===0)return'今天';if(x===1)return'明天';if(x===2)return'後天';if(x===-1)return'昨天';return`${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）`}
-// 效期規則：名稱符合時，效期 = 領證日 + N 天（之後要加規則就加在這裡）
-const RULES=[{match:/求才證明/,days:90}];
-const ruleFor=name=>RULES.find(r=>r.match.test(name||''));
+// ── 子任務類型：決定要填哪些日期、效期怎麼算（之後要加類型就加在這裡）
 const addDays=(d,n)=>{const dt=parseD(d);dt.setDate(dt.getDate()+n);return iso(dt)};
+// 「發文日起算 N 個月」：到期日為對應日當天（例：2026/9/17 +1 年 → 2027/9/17）；該月沒有對應日時為月底
+function termEnd(d,months){
+  const s=parseD(d),m=s.getMonth()+months,ty=s.getFullYear()+Math.floor(m/12),tm=((m%12)+12)%12,day=s.getDate();
+  const last=new Date(ty,tm+1,0).getDate();
+  return iso(new Date(ty,tm,Math.min(day,last)));
+}
+const TYPES={
+  general:{label:'一般（不需日期）'},
+  jc:{label:'求才證明書',short:'求才證明',from:'領證日',rule:'領證日 +90 天',calc:d=>addDays(d,90),match:/求才/},
+  nv:{label:'無違反法令證明書',short:'無違反',from:'領證日',rule:'領證日 +90 天',calc:d=>addDays(d,90),match:/無違/},
+  mol:{label:'勞動部函（初次招募）',short:'招募函',from:'發文日',rule:'發文日起算一年',calc:d=>termEnd(d,12),match:/勞動部函|招募函/},
+  entry:{label:'入國引進函－入簽（初招）',short:'入簽',from:'發文日',rule:'發文日起算 9 個月',calc:d=>termEnd(d,9),match:/入簽|入國|引進/},
+  reentry:{label:'入國引進函－重入簽（重招）',short:'重入簽',from:'發文日',rule:'手動填寫',match:/重入簽/},
+  verify:{label:'國籍驗證文件',short:'驗證',dhl:true,match:/驗證/}
+};
+const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','verify'];
+const TPL=[['求才證明書','jc'],['無違反法令證明書','nv'],['勞動部函（初次招募）','mol'],['入簽','entry'],['重入簽','reentry'],['國籍驗證文件','verify']];
+function guessType(name){for(const k of ['reentry','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
+const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
 const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
 let openSubs=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
 async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
-  const m=error.message||'';if(/notes|issue_date/.test(m))alert('資料庫還沒有「備註／領證日」欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
 /* ---------- 正在做 ---------- */
@@ -346,20 +371,55 @@ function renderGeneral(){
 }
 
 /* ---------- 案件 ---------- */
+const F=(key,role)=>document.getElementById(`${key}-${role}`);
+function typeSelect(key,t,manual){
+  return `<select id="${key}-type" data-key="${key}" data-role="type"${manual?' data-manual="1"':''}>${TYPE_ORDER.map(k=>`<option value="${k}"${k===t?' selected':''}>${TYPES[k].label}</option>`).join('')}</select>`;
+}
+function dateInput(key,role,caption,val,hint=''){
+  return `<div class="field"><span class="fieldCaption">${caption}${hint?`<span class="ruleHint">${hint}</span>`:''}</span><input id="${key}-${role}" data-key="${key}" data-role="${role}" type="date" value="${val||''}"></div>`;
+}
+// 依類型決定要出現哪些日期欄位
+function dateFields(key,t,v){
+  const T=TYPES[t];let h='';
+  if(T.from)h+=`<div class="fieldRow">${dateInput(key,'from',T.from,v.from)}${dateInput(key,'exp','效期到期日',v.exp,T.rule)}</div>`;
+  else if(v.from||v.exp)h+=`<div class="fieldRow">${v.from?dateInput(key,'from','領證／發文日',v.from):''}${v.exp?dateInput(key,'exp','效期到期日',v.exp):''}</div>`;
+  if(T.dhl||v.dhl)h+=dateInput(key,'dhl','DHL 寄國外日',v.dhl);
+  return h;
+}
+function rebuildDates(key,src){
+  const box=F(key,'dates'),sel=F(key,'type');if(!box||!sel)return;
+  const get=r=>(src&&src[`${key}-${r}`]!=null)?src[`${key}-${r}`]:(F(key,r)?.value||'');
+  box.innerHTML=dateFields(key,sel.value,{from:get('from'),exp:get('exp'),dhl:get('dhl')});
+}
+function recalc(key){
+  const T=TYPES[F(key,'type')?.value],from=F(key,'from'),exp=F(key,'exp');
+  if(T&&T.calc&&from&&from.value&&exp)exp.value=T.calc(from.value);
+}
+function onField(e){
+  const el=e.target,key=el.dataset&&el.dataset.key,role=el.dataset&&el.dataset.role;if(!key)return;
+  if(role==='type'){if(e.type==='change')el.dataset.manual='1';rebuildDates(key);recalc(key)}
+  else if(role==='from')recalc(key);
+  else if(role==='name'){
+    const sel=F(key,'type');if(!sel||sel.dataset.manual)return;
+    const g=guessType(el.value);if(sel.value!==g){sel.value=g;rebuildDates(key);recalc(key)}
+  }
+}
+
 function subRowHTML(c,x){
-  const exp=x.expiry_date,dd=exp?dayDiff(exp):null;
+  const t=typeOf(x),T=TYPES[t],exp=x.expiry_date,dd=exp?dayDiff(exp):null;
   const late=!x.is_completed&&exp&&dd<0,soon=!x.is_completed&&exp&&dd>=0&&dd<=14;
   const meta=[
     x.status?esc(x.status):'',
-    x.issue_date?`領證 ${ymd(x.issue_date)}`:'',
+    x.issue_date?`${T.from||'日期'} ${ymd(x.issue_date)}`:'',
     exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過效期':'效期到'} ${ymd(exp)}${soon||late?`（${dueLabel(exp)}）`:''}</span>`:'',
+    x.dhl_date?`DHL 寄出 ${ymd(x.dhl_date)}`:'',
     x.task_date?`辦理 ${dueLabel(x.task_date)}`:''
   ].filter(Boolean).join(' · ');
-  const editing=openSubs.has(x.id),rule=ruleFor(x.content);
+  const editing=openSubs.has(x.id),key='se-'+x.id;
   let html=`<div class="subRow${x.is_completed?' done':''}${editing?' editing':''}">
     <button class="check${x.is_completed?' on':''}" data-act="sub-toggle" data-cid="${c.id}" data-id="${x.id}" aria-label="${x.is_completed?'改回未完成':'完成'}"></button>
-    <div class="body clickable" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}" title="點擊編輯備註與日期">
-      <div class="text">${esc(x.content)}</div>${meta?`<div class="meta">${meta}</div>`:''}
+    <div class="body clickable" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}" title="點擊編輯">
+      <div class="text">${esc(x.content)}${T.short?`<span class="tag">${T.short}</span>`:''}</div>${meta?`<div class="meta">${meta}</div>`:''}
       ${x.notes&&!editing?`<div class="subNote">${esc(x.notes)}</div>`:''}
     </div>
     <div class="actions">
@@ -367,14 +427,14 @@ function subRowHTML(c,x){
       <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
     </div></div>`;
   if(editing)html+=`<div class="subEdit">
-    <div class="field"><span class="fieldCaption">名稱</span><input id="se-c-${x.id}" value="${esc(x.content)}"></div>
-    <div class="field"><span class="fieldCaption">狀態</span><input id="se-s-${x.id}" value="${esc(x.status||'')}" placeholder="例如：審查中"></div>
+    <div class="field"><span class="fieldCaption">名稱</span><input id="${key}-name" data-key="${key}" data-role="name" value="${esc(x.content)}"></div>
     <div class="fieldRow">
-      <div class="field"><span class="fieldCaption">領證日</span><input id="se-i-${x.id}" type="date" value="${x.issue_date||''}"></div>
-      <div class="field"><span class="fieldCaption">效期到期日<span class="ruleHint" id="se-h-${x.id}">${rule?`領證日 +${rule.days} 天`:''}</span></span><input id="se-e-${x.id}" type="date" value="${exp||''}"></div>
+      <div class="field"><span class="fieldCaption">類型</span>${typeSelect(key,t,!!x.doc_type)}</div>
+      <div class="field"><span class="fieldCaption">狀態</span><input id="${key}-status" value="${esc(x.status||'')}" placeholder="例如：審查中"></div>
     </div>
+    <div id="${key}-dates" class="subform">${dateFields(key,t,{from:x.issue_date,exp,dhl:x.dhl_date})}</div>
     ${x.task_date?`<div class="tiny" style="margin-top:0">舊的辦理日：${ymd(x.task_date)} <button class="btn ghost" data-act="sub-cleartask" data-cid="${c.id}" data-id="${x.id}">清除</button></div>`:''}
-    <div class="field"><span class="fieldCaption">備註</span><textarea id="se-n-${x.id}" class="caseNote" placeholder="例如：文號、承辦人、補件內容…">${esc(x.notes||'')}</textarea></div>
+    <div class="field"><span class="fieldCaption">備註</span><textarea id="${key}-notes" class="caseNote" placeholder="例如：文號、承辦人、補件內容…">${esc(x.notes||'')}</textarea></div>
     <div class="caseFoot"><button class="btn ghost" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="sub-save" data-cid="${c.id}" data-id="${x.id}">儲存</button></div>
   </div>`;
   return html;
@@ -382,34 +442,33 @@ function subRowHTML(c,x){
 function renderCases(){
   const box=$('#caseList');
   // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
-  const saved={};box.querySelectorAll('input[id],textarea[id^="se-n-"]').forEach(el=>saved[el.id]=el.value);
+  const saved={};box.querySelectorAll('input[id],select[id],textarea[id$="-notes"]').forEach(el=>saved[el.id]=el.value);
+  const manual={};box.querySelectorAll('select[data-manual]').forEach(el=>manual[el.id]=1);
   const act=document.activeElement,actId=box.contains(act)?act.id:null;
   const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
   if(actId&&act.tagName==='TEXTAREA')saved[actId]=act.value;
 
   box.innerHTML=cases.length?cases.map(c=>{
-    const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length;
+    const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length,key='c-'+c.id;
     return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
       <summary><span class="caseTitle">${esc(c.name)}</span><span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
       <div class="caseBody">
         <div class="label">備註</div>
         <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
         <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
-        <div class="label" style="margin-top:14px">子任務<span style="margin-left:6px">點名稱可編輯備註與日期</span></div>
+        <div class="label" style="margin-top:14px">子任務<span style="margin-left:6px">點名稱可編輯</span></div>
         ${a.length?a.map(x=>subRowHTML(c,x)).join(''):'<div class="empty">還沒有子任務。</div>'}
         <div class="label" style="margin-top:16px">新增子任務</div>
         <div class="subform">
           <div class="chips"><span class="fieldCaption">常用</span>
-            <button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="求才證明書">求才證明書</button>
-            <button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="無違反法令證明書">無違反法令證明書</button>
+            ${TPL.map(([name,t])=>`<button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="${name}" data-type="${t}">${name}</button>`).join('')}
           </div>
-          <div class="field"><span class="fieldCaption">子任務</span><input id="ct-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才登記"></div>
-          <div class="field"><span class="fieldCaption">狀態</span><input id="cs-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：審查中"></div>
+          <div class="field"><span class="fieldCaption">子任務</span><input id="${key}-name" data-key="${key}" data-role="name" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才登記"></div>
           <div class="fieldRow">
-            <div class="field"><span class="fieldCaption">領證日</span><input id="ci-${c.id}" type="date"></div>
-            <div class="field"><span class="fieldCaption">效期到期日<span class="ruleHint" id="ch-${c.id}"></span></span><input id="ce-${c.id}" type="date"></div>
+            <div class="field"><span class="fieldCaption">類型</span>${typeSelect(key,'general',false)}</div>
+            <div class="field"><span class="fieldCaption">狀態</span><input id="${key}-status" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：審查中"></div>
           </div>
-          <div class="tiny" style="margin-top:0">求才證明書填了領證日，效期會自動帶入 +90 天，之後仍可手動改。</div>
+          <div id="${key}-dates" class="subform"></div>
         </div>
         <div class="caseFoot">
           <button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>
@@ -417,24 +476,15 @@ function renderCases(){
         </div>
       </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
 
-  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
-  box.querySelectorAll('input[id^="ct-"],input[id^="se-c-"]').forEach(el=>updateHint(el));
+  // 還原：先還原類型，依類型重建日期欄位，再還原其他值
+  box.querySelectorAll('select[data-role="type"]').forEach(s=>{
+    if(saved[s.id]!=null)s.value=saved[s.id];
+    if(manual[s.id])s.dataset.manual='1';
+    rebuildDates(s.dataset.key,saved);
+  });
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&el.tagName!=='SELECT')el.value=v});
   if(actId){const el=document.getElementById(actId);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
   return cases.length;
-}
-// 找出同一組的 名稱／領證日／效期 欄位
-function trio(el){
-  const id=el.id||'';let m;
-  if(m=id.match(/^se-[cie]-(.+)$/))return{name:$('#se-c-'+m[1]),issue:$('#se-i-'+m[1]),exp:$('#se-e-'+m[1]),hint:$('#se-h-'+m[1])};
-  if(m=id.match(/^c[tie]-(.+)$/))return{name:$('#ct-'+m[1]),issue:$('#ci-'+m[1]),exp:$('#ce-'+m[1]),hint:$('#ch-'+m[1])};
-  return null;
-}
-function updateHint(el){const t=trio(el);if(!t||!t.hint)return;const r=ruleFor(t.name&&t.name.value);t.hint.textContent=r?`領證日 +${r.days} 天`:''}
-function autoExpiry(el){
-  const t=trio(el);if(!t)return;updateHint(el);
-  if(el!==t.issue&&el!==t.name)return;
-  const r=ruleFor(t.name&&t.name.value);
-  if(r&&t.issue&&t.issue.value)t.exp.value=addDays(t.issue.value,r.days);
 }
 
 /* ---------- 近期 ---------- */
@@ -444,7 +494,9 @@ function renderUpcoming(){
   cases.forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{
     const t=c.name+' › '+x.content;
     if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
-    if(x.expiry_date)u.push({d:x.expiry_date,t,m:x.issue_date?`效期到期・${ymd(x.issue_date)} 領證`:'效期到期'});
+    const T=TYPES[typeOf(x)];
+    if(x.expiry_date)u.push({d:x.expiry_date,t,m:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
+    if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
   u.sort((a,b)=>a.d.localeCompare(b.d));
   const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
@@ -557,14 +609,18 @@ $('#caseForm').addEventListener('submit',async e=>{
   if(!await run(client.from('capture_cases').insert({user_id:user.id,name}))){el.value=name;return}
   refresh('cases');
 });
+// 讀出一組欄位要寫進資料庫的值
+function readDates(key){const v=r=>F(key,r)?(F(key,r).value||null):null;return{issue_date:v('from'),expiry_date:v('exp'),dhl_date:v('dhl')}}
 async function addSub(cid){
-  const g=p=>document.getElementById(p+cid),ct=g('ct-');
-  const content=ct.value.trim();if(!content){ct.focus();return}
-  const row={user_id:user.id,case_id:cid,content,status:g('cs-').value.trim()||null,expiry_date:g('ce-').value||null};
-  if(g('ci-').value)row.issue_date=g('ci-').value;
-  const keep=['ct-','cs-','ci-','ce-'].map(p=>g(p).value);
-  ['ct-','cs-','ci-','ce-'].forEach(p=>g(p).value='');
-  if(!await run(client.from('capture_case_subtasks').insert(row))){['ct-','cs-','ci-','ce-'].forEach((p,i)=>g(p).value=keep[i]);return}
+  const key='c-'+cid,nameEl=F(key,'name');
+  const content=nameEl.value.trim();if(!content){nameEl.focus();return}
+  const t=F(key,'type').value,dts=readDates(key);
+  const row={user_id:user.id,case_id:cid,content,status:F(key,'status').value.trim()||null,expiry_date:dts.expiry_date};
+  if(dts.issue_date)row.issue_date=dts.issue_date;
+  if(dts.dhl_date)row.dhl_date=dts.dhl_date;
+  if(t!==guessType(content))row.doc_type=t;   // 名稱猜得到類型就不必另存
+  nameEl.value='';F(key,'status').value='';const sel=F(key,'type');sel.value='general';delete sel.dataset.manual;rebuildDates(key,{});
+  if(!await run(client.from('capture_case_subtasks').insert(row))){nameEl.value=content;return}
   refresh('cases');
 }
 
@@ -606,16 +662,19 @@ document.addEventListener('click',async e=>{
     case 'sub-del':
       if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
     case 'sub-add':addSub(cid);break;
-    case 'sub-tpl':{const el=document.getElementById('ct-'+cid);el.value=b.dataset.name;autoExpiry(el);document.getElementById('ci-'+cid).focus();break;}
+    case 'sub-tpl':{const key='c-'+cid,sel=F(key,'type');F(key,'name').value=b.dataset.name;sel.value=b.dataset.type;sel.dataset.manual='1';rebuildDates(key);
+      (F(key,'from')||F(key,'dhl')||F(key,'status')).focus();break;}
     case 'sub-edit':openSubs.has(id)?openSubs.delete(id):openSubs.add(id);renderCases();
-      if(openSubs.has(id))document.getElementById('se-i-'+id)?.scrollIntoView({block:'nearest',behavior:'smooth'});break;
+      if(openSubs.has(id))F('se-'+id,'name')?.scrollIntoView({block:'nearest',behavior:'smooth'});break;
     case 'sub-save':{
-      if(!sub)break;const g=p=>document.getElementById(p+id);
-      const content=g('se-c-').value.trim()||sub.content;
-      const patch={content,status:g('se-s-').value.trim()||null,expiry_date:g('se-e-').value||null};
-      const iss=g('se-i-').value||null,notes=g('se-n-').value;
-      if(iss!==(sub.issue_date||null))patch.issue_date=iss;
-      if(notes!==(sub.notes||''))patch.notes=notes||null;
+      if(!sub)break;const key='se-'+id;
+      const content=F(key,'name').value.trim()||sub.content,t=F(key,'type').value,dts=readDates(key);
+      const patch={content,status:F(key,'status').value.trim()||null,expiry_date:dts.expiry_date};
+      if(dts.issue_date!==(sub.issue_date||null))patch.issue_date=dts.issue_date;
+      if(dts.dhl_date!==(sub.dhl_date||null))patch.dhl_date=dts.dhl_date;
+      const wantType=t===guessType(content)?null:t;
+      if(wantType!==(sub.doc_type||null)&&!(wantType===null&&!sub.doc_type))patch.doc_type=wantType;
+      const notes=F(key,'notes').value;if(notes!==(sub.notes||''))patch.notes=notes||null;
       if(await run(client.from('capture_case_subtasks').update(patch).eq('id',id))){
         const oldNow=cs.name+' › '+sub.content;
         if(current===oldNow&&content!==sub.content){current=cs.name+' › '+content;store.set(K.now,current)}
@@ -646,8 +705,8 @@ caseList.addEventListener('focusout',async e=>{
   c.notes=t.value;
   if(await run(client.from('capture_cases').update({notes:t.value}).eq('id',c.id)))pill('● 備註已儲存','ok');
 });
-caseList.addEventListener('input',e=>autoExpiry(e.target));
-caseList.addEventListener('change',e=>autoExpiry(e.target));
+caseList.addEventListener('input',onField);
+caseList.addEventListener('change',onField);
 caseList.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();addSub(e.target.dataset.enter)}
 });
