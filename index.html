@@ -274,7 +274,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.3.1</div>
+  <div>Capture Pad v1.3.2</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -316,11 +316,12 @@ const TYPES={
   mol:{label:'勞動部函（初次招募）',short:'招募函',from:'發文日',rule:'發文日起算一年',calc:d=>termEnd(d,12),match:/勞動部函|招募函/},
   entry:{label:'入國引進函－入簽（初招）',short:'入簽',from:'發文日',rule:'發文日起算 9 個月',calc:d=>termEnd(d,9),match:/入簽|入國|引進/},
   reentry:{label:'入國引進函－重入簽（重招）',short:'重入簽',from:'發文日',rule:'手動填寫',match:/重入簽/},
+  takeover:{label:'承接登記',short:'承接登記',from:'登記日',expLabel:'登記到期日',rule:'登記日 +60 天',calc:d=>addDays(d,60),match:/承接/},
   verify:{label:'國籍驗證文件',short:'驗證',dhl:true,match:/驗證/}
 };
-const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','verify'];
-const TPL=[['求才證明書','jc'],['無違反法令證明書','nv'],['勞動部函（初次招募）','mol'],['入簽','entry'],['重入簽','reentry'],['國籍驗證文件','verify']];
-function guessType(name){for(const k of ['reentry','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
+const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','takeover','verify'];
+const TPL=[['求才證明書','jc'],['無違反法令證明書','nv'],['勞動部函（初次招募）','mol'],['入簽','entry'],['重入簽','reentry'],['承接登記','takeover'],['國籍驗證文件','verify']];
+function guessType(name){for(const k of ['takeover','reentry','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
 const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
 const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
 let openSubs=new Set();
@@ -381,7 +382,7 @@ function dateInput(key,role,caption,val,hint=''){
 // 依類型決定要出現哪些日期欄位
 function dateFields(key,t,v){
   const T=TYPES[t];let h='';
-  if(T.from)h+=`<div class="fieldRow">${dateInput(key,'from',T.from,v.from)}${dateInput(key,'exp','效期到期日',v.exp,T.rule)}</div>`;
+  if(T.from)h+=`<div class="fieldRow">${dateInput(key,'from',T.from,v.from)}${dateInput(key,'exp',T.expLabel||'效期到期日',v.exp,T.rule)}</div>`;
   else if(v.from||v.exp)h+=`<div class="fieldRow">${v.from?dateInput(key,'from','領證／發文日',v.from):''}${v.exp?dateInput(key,'exp','效期到期日',v.exp):''}</div>`;
   if(T.dhl||v.dhl)h+=dateInput(key,'dhl','DHL 寄國外日',v.dhl);
   return h;
@@ -411,7 +412,7 @@ function subRowHTML(c,x){
   const meta=[
     x.status?esc(x.status):'',
     x.issue_date?`${T.from||'日期'} ${ymd(x.issue_date)}`:'',
-    exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過效期':'效期到'} ${ymd(exp)}${soon||late?`（${dueLabel(exp)}）`:''}</span>`:'',
+    exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過期':(T.expLabel?'到期':'效期到')} ${ymd(exp)}${soon||late?`（${dueLabel(exp)}）`:''}</span>`:'',
     x.dhl_date?`DHL 寄出 ${ymd(x.dhl_date)}`:'',
     x.task_date?`辦理 ${dueLabel(x.task_date)}`:''
   ].filter(Boolean).join(' · ');
@@ -495,7 +496,7 @@ function renderUpcoming(){
     const t=c.name+' › '+x.content;
     if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
     const T=TYPES[typeOf(x)];
-    if(x.expiry_date)u.push({d:x.expiry_date,t,m:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
+    if(x.expiry_date)u.push({d:x.expiry_date,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
     if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
   u.sort((a,b)=>a.d.localeCompare(b.d));
