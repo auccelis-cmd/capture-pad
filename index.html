@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="插單">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;
@@ -21,7 +21,7 @@
   --accent:#8fb5a1;--accent-ink:#10201a;--accent-soft:rgba(143,181,161,.13);
   --danger:#d99a8e;--danger-soft:rgba(217,154,142,.12);--warn:#d8b06a;
   --radius:14px;
-  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --serif:"LXGW WenKai TC","Kaiti TC","DFKai-SB","BiauKai",serif;
   --sans:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -39,10 +39,20 @@ button{cursor:pointer}
 .focusDot{display:none}
 .focusMain{flex:1;min-width:0}
 .focusLabel{font-size:11px;color:var(--muted);letter-spacing:.08em}
-.focusText{font-family:var(--serif);font-weight:600;font-size:18px;letter-spacing:.02em;margin-top:1px;word-break:break-word}
-.focusCard:not(.on) .focusText{font-family:var(--sans);font-weight:400;font-size:13.5px;color:var(--faint);letter-spacing:0}
-.focusPrev{font-size:12px;color:var(--muted);margin-top:3px}
-.focusPrev:empty{display:none}
+.focusText{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.03em;margin-top:1px;word-break:break-word}
+.focusCount{margin-left:8px;color:var(--faint)}
+.focusPrimary{display:flex;align-items:center;gap:4px}
+.focusPrimary .focusText{flex:1;min-width:0}
+.focusEmpty{font-size:13.5px;color:var(--faint);padding:2px 0}
+.fActs{display:flex;flex:none}
+.focusChips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.focusChips:empty{display:none}
+.fchip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--raised);max-width:100%;flex:none}
+.fchipText{border:0;background:transparent;padding:4px 2px 4px 11px;font-family:var(--serif);font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.fchipText:hover{color:var(--accent)}
+.fchipBtn{border:0;background:transparent;color:var(--faint);width:24px;height:24px;border-radius:50%;font-size:12px;padding:0;flex:none}
+.fchipBtn:hover{color:var(--ink);background:var(--line)}
+.icon.on{color:var(--accent);background:var(--accent-soft)}
 .focusSide{display:flex;gap:8px;align-items:center;flex:none}
 .pill{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .pill.ok{color:var(--accent)}
@@ -52,12 +62,12 @@ button{cursor:pointer}
 .workspace{max-width:1500px;margin:4px auto 0;padding:0 22px 20px;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr) minmax(280px,.9fr);gap:16px;align-items:start}
 .col{min-width:0}
 .colHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 2px 10px}
-.colHead h2{margin:0;font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:.08em}
+.colHead h2{margin:0;font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:.1em}
 .colHint{font-size:11px;color:var(--faint)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:0 0 12px}
 .label{font-size:12px;color:var(--muted);margin-bottom:8px}
 .sectionhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
-.sectiontitle{font-size:13.5px;font-weight:700;letter-spacing:.02em}
+.sectiontitle{font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.04em}
 .count{font-size:12px;color:var(--faint)}
 input,textarea{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:9px 10px;font-size:16px;outline:none;min-width:0;width:100%;transition:border-color .15s}
 input::placeholder,textarea::placeholder{color:var(--faint)}
@@ -103,7 +113,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .caseCard[open]{border-color:#3b4440}
 .caseCard summary{list-style:none;display:flex;gap:10px;align-items:center;padding:12px 12px 12px 14px;cursor:pointer}
 .caseCard summary::-webkit-details-marker{display:none}
-.caseTitle{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:.03em;flex:1;min-width:0;word-break:break-word}
+.caseTitle{font-family:var(--serif);font-size:17.5px;font-weight:700;letter-spacing:.04em;flex:1;min-width:0;word-break:break-word}
 .progress{font-size:11.5px;color:var(--muted);background:var(--raised);padding:2px 8px;border-radius:999px}
 .progress:empty{display:none}
 .chev{color:var(--faint);transition:transform .15s}
@@ -146,13 +156,13 @@ select:focus{border-color:var(--accent)}
 .upGroup .n{font-weight:500;color:var(--faint)}
 .upItem{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 4px 9px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start}
 .upItem.late{border-color:rgba(217,154,142,.28)}
-.upDate{font-size:12px;font-weight:700;color:var(--accent);width:78px;flex:none;padding-top:2px}
+.upDate{font-family:var(--serif);font-size:13.5px;font-weight:700;color:var(--accent);width:78px;flex:none;padding-top:2px}
 .upItem.late .upDate{color:var(--danger)}
 .upTitle{font-size:13.5px;font-weight:600;word-break:break-word}
 
 /* 登入 */
 .gate{max-width:440px;margin:0 auto;padding:calc(56px + env(safe-area-inset-top)) 16px 40px}
-.gateTitle{font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:.1em}
+.gateTitle{font-family:var(--serif);font-size:34px;font-weight:700;letter-spacing:.1em}
 .gateSub{color:var(--muted);font-size:13px;margin:4px 0 20px}
 .authgrid{display:grid;gap:9px;margin-top:10px}
 .status{font-size:12px;color:var(--muted)}
@@ -165,7 +175,13 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
 .tabs{display:none}
 @media(max-width:980px){
   .focusBar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
-  .focusText{font-size:16px}
+  .focusText{font-size:18px}
+  .focusCard{position:relative;padding-top:10px}
+  .focusSide{position:absolute;top:6px;right:8px;gap:4px}
+  .focusLabel{min-height:26px;display:flex;align-items:center;padding-right:150px}
+  .focusChips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-right:-12px;padding-right:12px}
+  .focusChips::-webkit-scrollbar{display:none}
+  .fchipText{max-width:200px}
   .workspace{display:block;padding:0 14px 10px}
   .col{display:none}
   body[data-tab="general"] #col-general,
@@ -215,14 +231,13 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
 <!-- 正在做（全域） -->
 <header class="focusBar">
   <div class="focusCard" id="focusCard">
-    <span class="focusDot"></span>
     <div class="focusMain">
-      <div class="focusLabel">正在做</div>
-      <div class="focusText" id="focusText"></div>
-      <div class="focusPrev" id="focusPrev"></div>
+      <div class="focusLabel">正在做<span class="focusCount" id="focusCount"></span></div>
+      <div class="focusPrimary" id="focusPrimary"></div>
+      <div class="focusChips" id="focusChips"></div>
     </div>
     <div class="focusSide">
-      <button class="btn secondary hidden" id="clearNow" data-act="clearNow">清除</button>
+      <button class="btn ghost hidden" id="clearNow" data-act="clearNow">全部清空</button>
       <span class="pill" id="cloudPill">未連接</span>
     </div>
   </div>
@@ -275,7 +290,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.3.3</div>
+  <div>Capture Pad v1.4.1</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -285,11 +300,12 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
 </nav>
 
 <script>
-const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases'};
+const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus'};
 const $=s=>document.querySelector(s);
 const store={get(k,d=''){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{(v===''||v==null)?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
 let client=null,user=null,channel=null,items=[],cases=[],subs={};
-let current=store.get(K.now),prev=store.get(K.prev);
+const MAXF=5;
+let focus=[],focusLocal=false,loaded={items:false,cases:false};
 let openCases=new Set((()=>{try{return JSON.parse(store.get(K.open,'[]'))}catch{return[]}})());
 
 /* ---------- 小工具 ---------- */
@@ -333,15 +349,78 @@ async function run(p){pill('同步中…');const {error}=await p;if(error){conso
   return false}return true}
 
 /* ---------- 正在做 ---------- */
-function setCurrent(text){if(current&&current!==text){prev=current;store.set(K.prev,prev)}current=text;store.set(K.now,current);renderAll()}
-function clearCurrent(){if(current){prev=current;store.set(K.prev,prev)}current='';store.set(K.now,'');renderAll()}
-function returnPrev(){if(!prev)return;const n=current;current=prev;prev=n||'';store.set(K.now,current);store.set(K.prev,prev);renderAll()}
+// 每一筆是 {k:'item',id} / {k:'sub',id,cid} / {k:'text',t}；第一筆是「主要」
+const fkey=e=>e.k==='text'?'t:'+e.t:e.k+':'+e.id;
+const inFocus=(k,id)=>focus.some(e=>e.k===k&&e.id===id);
+function resolve(e){
+  if(e.k==='item'){const x=items.find(i=>i.id===e.id);return x&&!x.is_completed?x.content:null}
+  if(e.k==='sub'){const c=cases.find(c=>c.id===e.cid),s=c&&(subs[e.cid]||[]).find(s=>s.id===e.id);return s&&!s.is_completed?c.name+' › '+s.content:null}
+  return e.t||null;
+}
+const liveFocus=()=>focus.map(e=>({e,text:resolve(e)})).filter(x=>x.text);
+async function saveFocus(){
+  store.set(K.focus,JSON.stringify(focus));
+  if(focusLocal||!client||!user)return;
+  const {error}=await client.from('capture_focus').upsert({user_id:user.id,entries:focus,updated_at:new Date().toISOString()});
+  if(error){console.error(error);focusLocal=true;pill('正在做只存在這台裝置','bad')}
+}
+async function loadFocus(){
+  const r=await client.from('capture_focus').select('entries').eq('user_id',user.id).maybeSingle();
+  if(r.error){console.warn('capture_focus',r.error);focusLocal=true;try{focus=JSON.parse(store.get(K.focus,'[]'))||[]}catch{focus=[]}return}
+  focusLocal=false;focus=Array.isArray(r.data&&r.data.entries)?r.data.entries:[];
+}
+// 已完成或已刪除的事項自動移出
+function pruneFocus(){
+  if(!loaded.items||!loaded.cases)return;
+  const keep=focus.filter(e=>resolve(e));
+  if(keep.length!==focus.length){focus=keep;saveFocus()}
+}
+// 舊版只記一件「正在做」，第一次開新版時搬過來
+async function migrateOldFocus(){
+  const old=store.get(K.now);
+  if(!focus.length){
+    let local=[];try{local=JSON.parse(store.get(K.focus,'[]'))||[]}catch{}
+    if(local.length&&!focusLocal)focus=local;
+    else if(old){
+      const it=items.find(x=>!x.is_completed&&x.content===old);
+      let e=it?{k:'item',id:it.id}:null;
+      if(!e)for(const c of cases){const s=(subs[c.id]||[]).find(s=>!s.is_completed&&c.name+' › '+s.content===old);if(s){e={k:'sub',id:s.id,cid:c.id};break}}
+      focus=[e||{k:'text',t:old}];
+    }
+    if(focus.length){await saveFocus();renderAll()}
+  }
+  store.set(K.now,'');store.set(K.prev,'');
+}
+function toggleFocus(entry){
+  const k=fkey(entry),i=focus.findIndex(e=>fkey(e)===k);
+  if(i>=0)focus.splice(i,1);
+  else{if(liveFocus().length>=MAXF){pill(`正在做最多 ${MAXF} 件`,'bad');return}focus.push(entry)}
+  renderAll();saveFocus();
+}
+function makeMain(k){const i=focus.findIndex(e=>fkey(e)===k);if(i>0){focus.unshift(focus.splice(i,1)[0]);renderAll();saveFocus()}}
+function removeFocus(k){focus=focus.filter(e=>fkey(e)!==k);renderAll();saveFocus()}
+async function completeFocus(k){
+  const e=focus.find(e=>fkey(e)===k);if(!e)return;
+  removeFocus(k);
+  if(e.k==='item'){const it=items.find(x=>x.id===e.id);if(it){it.is_completed=true;it.updated_at=new Date().toISOString();renderAll()}
+    await run(client.from('capture_items').update({is_completed:true}).eq('id',e.id));refresh('items')}
+  else if(e.k==='sub'){const s=(subs[e.cid]||[]).find(s=>s.id===e.id);if(s){s.is_completed=true;renderAll()}
+    await run(client.from('capture_case_subtasks').update({is_completed:true}).eq('id',e.id));refresh('cases')}
+}
 function renderFocus(){
-  const on=!!current;
+  const live=liveFocus(),on=live.length>0;
   $('#focusCard').classList.toggle('on',on);
-  $('#focusText').textContent=on?current:'還沒設定。按任何事項旁的 ▶。';
-  $('#focusPrev').innerHTML=(prev&&prev!==current)?`剛才做到：${esc(prev)} <button class="btn ghost" data-act="back">↩ 回去</button>`:'';
-  show('#clearNow',on);
+  $('#focusCount').textContent=on?`${live.length} / ${MAXF}`:'';
+  show('#clearNow',live.length>1);
+  if(!on){$('#focusPrimary').innerHTML=`<span class="focusEmpty">還沒設定。按事項旁的 ▶ 加進來，最多可以同時放 ${MAXF} 件。</span>`;$('#focusChips').innerHTML='';return}
+  const [m,...rest]=live,mk=esc(fkey(m.e));
+  $('#focusPrimary').innerHTML=`<span class="focusText">${esc(m.text)}</span><span class="fActs">
+    <button class="icon" data-act="f-done" data-fk="${mk}" title="完成" aria-label="完成">✓</button>
+    <button class="icon" data-act="f-out" data-fk="${mk}" title="移出正在做" aria-label="移出正在做">×</button></span>`;
+  $('#focusChips').innerHTML=rest.map(x=>{const k=esc(fkey(x.e));return `<span class="fchip">
+    <button class="fchipText" data-act="f-main" data-fk="${k}" title="設為主要">${esc(x.text)}</button>
+    <button class="fchipBtn" data-act="f-done" data-fk="${k}" title="完成" aria-label="完成">✓</button>
+    <button class="fchipBtn" data-act="f-out" data-fk="${k}" title="移出正在做" aria-label="移出正在做">×</button></span>`}).join('');
 }
 
 /* ---------- 一般 ---------- */
@@ -357,11 +436,12 @@ function renderGeneral(){
     if(x.planned_date)bits.push(`<span class="due${late?' late':''}">${late?'逾期':'預計'} ${dueLabel(x.planned_date)}</span>`);
     bits.push('記錄 '+stamp(x.created_at));
     if(x.is_pinned)bits.push('已釘選');
-    return `<div class="row${current===x.content?' isNow':''}">
+    const f=inFocus('item',x.id);
+    return `<div class="row${f?' isNow':''}">
       <button class="check" data-act="done" data-id="${x.id}" aria-label="完成"></button>
       <div class="body clickable" data-act="item-edit" data-id="${x.id}" title="點擊修改內容與日期"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div></div>
       <div class="actions">
-        <button class="icon" data-act="now" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
+        <button class="icon${f?' on':''}" data-act="now" data-id="${x.id}" title="${f?'移出正在做':'加入正在做'}" aria-label="${f?'移出正在做':'加入正在做'}">▶</button>
         <button class="icon${x.is_pinned?' pin':''}" data-act="pin" data-id="${x.id}" title="釘選" aria-label="釘選">⌖</button>
         <button class="icon" data-act="del" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
       </div></div>`+(openItems.has(x.id)?`<div class="subEdit itemEdit">
@@ -437,7 +517,7 @@ function subRowHTML(c,x){
       ${x.notes&&!editing?`<div class="subNote">${esc(x.notes)}</div>`:''}
     </div>
     <div class="actions">
-      <button class="icon" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
+      <button class="icon${inFocus('sub',x.id)?' on':''}" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button>
       <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
     </div></div>`;
   if(editing)html+=`<div class="subEdit">
@@ -504,13 +584,13 @@ function renderCases(){
 /* ---------- 近期 ---------- */
 function renderUpcoming(){
   const u=[];
-  items.filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項'}));
+  items.filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項',k:'item',id:x.id}));
   cases.forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{
-    const t=c.name+' › '+x.content;
-    if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
+    const t=c.name+' › '+x.content,ref={k:'sub',id:x.id,cid:c.id};
+    if(x.task_date)u.push({...ref,d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
     const T=TYPES[typeOf(x)];
-    if(x.expiry_date)u.push({d:x.expiry_date,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
-    if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({d:x.dhl_date,t,m:'DHL 寄國外日'});
+    if(x.expiry_date)u.push({...ref,d:x.expiry_date,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
+    if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({...ref,d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
   u.sort((a,b)=>a.d.localeCompare(b.d));
   const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
@@ -520,7 +600,7 @@ function renderUpcoming(){
     html+=`<div class="upGroup ${cls}">${name}<span class="n">${g.length}</span></div>`+g.slice(0,40).map(x=>`<div class="upItem ${cls}">
       <div class="upDate">${dueLabel(x.d)}</div>
       <div class="body"><div class="upTitle">${esc(x.t)}</div><div class="meta">${esc(x.m)}</div></div>
-      <button class="icon" data-act="up-now" data-text="${esc(x.t)}" title="設為正在做" aria-label="設為正在做">▶</button></div>`).join('');
+      <button class="icon${inFocus(x.k,x.id)?' on':''}" data-act="up-now" data-k="${x.k}" data-id="${x.id}" data-cid="${x.cid||''}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button></div>`).join('');
   });
   $('#upcomingList').innerHTML=html||'<div class="card empty">目前沒有有日期的事項。新增時選個日期，就會出現在這裡。</div>';
   return u.filter(x=>dayDiff(x.d)<=0).length;
@@ -550,15 +630,15 @@ async function loadCases(){
 async function refresh(which='all'){
   if(!client||!user)return;
   pill('同步中…');
-  try{if(which!=='cases')await loadItems();if(which!=='items')await loadCases();pill('● 已同步','ok')}
+  try{if(which!=='cases'){await loadItems();loaded.items=true}if(which!=='items'){await loadCases();loaded.cases=true}if(which==='all')await loadFocus();pill('● 已同步','ok')}
   catch(e){console.error(e);pill('同步失敗','bad')}
-  renderAll();
+  pruneFocus();renderAll();
 }
 let rt;function softRefresh(){clearTimeout(rt);rt=setTimeout(()=>refresh('all'),300)}
 function subscribe(){
   if(channel)client.removeChannel(channel);
   channel=client.channel('capture-'+user.id);
-  ['capture_items','capture_cases','capture_case_subtasks'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t,filter:`user_id=eq.${user.id}`},softRefresh));
+  ['capture_items','capture_cases','capture_case_subtasks','capture_focus'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t,filter:`user_id=eq.${user.id}`},softRefresh));
   channel.subscribe();
 }
 async function migrateLocal(){
@@ -580,7 +660,7 @@ function gate(which){
 async function startApp(){
   document.body.classList.remove('locked');show('#gate',false);
   $('#who').textContent=user.email||'';
-  await refresh('all');await migrateLocal();subscribe();
+  await refresh('all');await migrateLocal();await migrateOldFocus();subscribe();
 }
 async function init(){
   let cfg={};try{cfg=JSON.parse(store.get(K.cfg,'{}'))}catch{}
@@ -629,9 +709,7 @@ async function saveItem(id){
   const it=items.find(x=>x.id===id);if(!it)return;
   const content=document.getElementById('it-name-'+id).value.trim()||it.content;
   const planned_date=document.getElementById('it-date-'+id).value||null;
-  const wasNow=current===it.content;
   if(!await run(client.from('capture_items').update({content,planned_date}).eq('id',id)))return;
-  if(wasNow&&content!==it.content){current=content;store.set(K.now,current)}
   openItems.delete(id);refresh('items');
 }
 async function addSub(cid){
@@ -657,14 +735,15 @@ document.addEventListener('click',async e=>{
   switch(act){
     case 'tab':setTab(b.dataset.tab);break;
     case 'date':$('#dueDate').value=b.dataset.off===''?'':todayISO(+b.dataset.off);break;
-    case 'now':if(it)setCurrent(it.content);break;
-    case 'sub-now':if(cs&&sub)setCurrent(cs.name+' › '+sub.content);break;
-    case 'up-now':setCurrent(b.dataset.text);break;
-    case 'back':returnPrev();break;
-    case 'clearNow':clearCurrent();break;
+    case 'now':if(it)toggleFocus({k:'item',id});break;
+    case 'sub-now':if(sub)toggleFocus({k:'sub',id,cid});break;
+    case 'up-now':toggleFocus(b.dataset.k==='sub'?{k:'sub',id,cid}:{k:'item',id});break;
+    case 'f-main':makeMain(b.dataset.fk);break;
+    case 'f-out':removeFocus(b.dataset.fk);break;
+    case 'f-done':completeFocus(b.dataset.fk);break;
+    case 'clearNow':if(confirm('清空所有「正在做」？（事項本身不會刪除）')){focus=[];renderAll();saveFocus()}break;
     case 'done':
       if(!it)break;
-      if(current===it.content){current='';store.set(K.now,'')}
       it.is_completed=true;it.updated_at=new Date().toISOString();renderAll();
       await run(client.from('capture_items').update({is_completed:true}).eq('id',id));refresh('items');break;
     case 'undo':
@@ -703,8 +782,6 @@ document.addEventListener('click',async e=>{
       if(wantType!==(sub.doc_type||null)&&!(wantType===null&&!sub.doc_type))patch.doc_type=wantType;
       const notes=F(key,'notes').value;if(notes!==(sub.notes||''))patch.notes=notes||null;
       if(await run(client.from('capture_case_subtasks').update(patch).eq('id',id))){
-        const oldNow=cs.name+' › '+sub.content;
-        if(current===oldNow&&content!==sub.content){current=cs.name+' › '+content;store.set(K.now,current)}
         openSubs.delete(id);refresh('cases');
       }
       break;}
@@ -715,7 +792,7 @@ document.addEventListener('click',async e=>{
       break;
     case 'logout':
       await client?.auth.signOut();if(channel)client.removeChannel(channel);
-      user=null;channel=null;items=[];cases=[];subs={};gate('login');pill('已登出');break;
+      user=null;channel=null;items=[];cases=[];subs={};focus=[];loaded={items:false,cases:false};gate('login');pill('已登出');break;
     case 'reset':
       if(confirm('清除這台裝置的連接設定並重新設定？（雲端資料不受影響）')){store.set(K.cfg,'');location.reload()}break;
   }
