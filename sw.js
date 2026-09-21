@@ -1,4 +1,4 @@
-const CACHE='capture-pad-v110';
+const CACHE='capture-pad-v120';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
