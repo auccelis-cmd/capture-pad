@@ -95,6 +95,17 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .field{display:grid;gap:5px;min-width:0}
 .fieldCaption{font-size:11px;color:var(--muted);font-weight:700}
 .fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.clickable{cursor:pointer;border-radius:8px}
+.clickable:hover .text{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.subNote{font-size:12px;color:#5d5a52;margin-top:4px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.subRow.editing{border-bottom:0}
+.subEdit{display:grid;gap:9px;padding:2px 0 14px 32px;border-bottom:1px solid #eee9df}
+.subEdit .caseFoot{margin-top:2px}
+.ruleHint{font-weight:500;color:var(--accent);margin-left:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-size:12px;color:var(--ink)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.due.soon{color:#9a6b2f}
 .caseFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px}
 
 /* 近期 */
@@ -134,6 +145,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   .tabs .n{font-size:11px;margin-left:4px;font-weight:500}
   .tabs .n.late{color:var(--danger);font-weight:700}
   .fieldRow{grid-template-columns:1fr}
+  .subEdit{padding-left:0}
   .focusText{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -230,7 +242,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.0</div>
+  <div>Capture Pad v1.1</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -257,9 +269,17 @@ const todayISO=(off=0)=>{const d=new Date();d.setDate(d.getDate()+off);return is
 const dayDiff=d=>{const n=new Date();return Math.round((parseD(d)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5)};
 const isToday=ts=>iso(new Date(ts))===todayISO();
 function dueLabel(d){if(!d)return'';const x=dayDiff(d),dt=parseD(d);if(x===0)return'今天';if(x===1)return'明天';if(x===2)return'後天';if(x===-1)return'昨天';return`${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）`}
+// 效期規則：名稱符合時，效期 = 領證日 + N 天（之後要加規則就加在這裡）
+const RULES=[{match:/求才證明/,days:90}];
+const ruleFor=name=>RULES.find(r=>r.match.test(name||''));
+const addDays=(d,n)=>{const dt=parseD(d);dt.setDate(dt.getDate()+n);return iso(dt)};
+const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
+let openSubs=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
-async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');return false}return true}
+async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
+  const m=error.message||'';if(/notes|issue_date/.test(m))alert('資料庫還沒有「備註／領證日」欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  return false}return true}
 
 /* ---------- 正在做 ---------- */
 function setCurrent(text){if(current&&current!==text){prev=current;store.set(K.prev,prev)}current=text;store.set(K.now,current);renderAll()}
@@ -302,10 +322,43 @@ function renderGeneral(){
 }
 
 /* ---------- 案件 ---------- */
+function subRowHTML(c,x){
+  const exp=x.expiry_date,dd=exp?dayDiff(exp):null;
+  const late=!x.is_completed&&exp&&dd<0,soon=!x.is_completed&&exp&&dd>=0&&dd<=14;
+  const meta=[
+    x.status?esc(x.status):'',
+    x.issue_date?`領證 ${ymd(x.issue_date)}`:'',
+    exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過效期':'效期到'} ${ymd(exp)}${soon||late?`（${dueLabel(exp)}）`:''}</span>`:'',
+    x.task_date?`辦理 ${dueLabel(x.task_date)}`:''
+  ].filter(Boolean).join(' · ');
+  const editing=openSubs.has(x.id),rule=ruleFor(x.content);
+  let html=`<div class="subRow${x.is_completed?' done':''}${editing?' editing':''}">
+    <button class="check${x.is_completed?' on':''}" data-act="sub-toggle" data-cid="${c.id}" data-id="${x.id}" aria-label="${x.is_completed?'改回未完成':'完成'}"></button>
+    <div class="body clickable" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}" title="點擊編輯備註與日期">
+      <div class="text">${esc(x.content)}</div>${meta?`<div class="meta">${meta}</div>`:''}
+      ${x.notes&&!editing?`<div class="subNote">${esc(x.notes)}</div>`:''}
+    </div>
+    <div class="actions">
+      <button class="icon" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
+      <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
+    </div></div>`;
+  if(editing)html+=`<div class="subEdit">
+    <div class="field"><span class="fieldCaption">名稱</span><input id="se-c-${x.id}" value="${esc(x.content)}"></div>
+    <div class="field"><span class="fieldCaption">狀態</span><input id="se-s-${x.id}" value="${esc(x.status||'')}" placeholder="例如：審查中"></div>
+    <div class="fieldRow">
+      <div class="field"><span class="fieldCaption">領證日</span><input id="se-i-${x.id}" type="date" value="${x.issue_date||''}"></div>
+      <div class="field"><span class="fieldCaption">效期到期日<span class="ruleHint" id="se-h-${x.id}">${rule?`領證日 +${rule.days} 天`:''}</span></span><input id="se-e-${x.id}" type="date" value="${exp||''}"></div>
+    </div>
+    ${x.task_date?`<div class="tiny" style="margin-top:0">舊的辦理日：${ymd(x.task_date)} <button class="btn ghost" data-act="sub-cleartask" data-cid="${c.id}" data-id="${x.id}">清除</button></div>`:''}
+    <div class="field"><span class="fieldCaption">備註</span><textarea id="se-n-${x.id}" class="caseNote" placeholder="例如：文號、承辦人、補件內容…">${esc(x.notes||'')}</textarea></div>
+    <div class="caseFoot"><button class="btn ghost" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="sub-save" data-cid="${c.id}" data-id="${x.id}">儲存</button></div>
+  </div>`;
+  return html;
+}
 function renderCases(){
   const box=$('#caseList');
   // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
-  const saved={};box.querySelectorAll('input[id]').forEach(el=>saved[el.id]=el.value);
+  const saved={};box.querySelectorAll('input[id],textarea[id^="se-n-"]').forEach(el=>saved[el.id]=el.value);
   const act=document.activeElement,actId=box.contains(act)?act.id:null;
   const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
   if(actId&&act.tagName==='TEXTAREA')saved[actId]=act.value;
@@ -318,25 +371,21 @@ function renderCases(){
         <div class="label">備註</div>
         <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
         <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
-        <div class="label" style="margin-top:14px">子任務</div>
-        ${a.length?a.map(x=>{
-          const late=!x.is_completed&&x.expiry_date&&dayDiff(x.expiry_date)<0;
-          const meta=[x.status?esc(x.status):'',x.task_date?`辦理 ${dueLabel(x.task_date)}`:'',x.expiry_date?`<span class="due${late?' late':''}">${late?'已過效期':'效期'} ${dueLabel(x.expiry_date)}</span>`:''].filter(Boolean).join(' · ');
-          return `<div class="subRow${x.is_completed?' done':''}">
-            <button class="check${x.is_completed?' on':''}" data-act="sub-toggle" data-cid="${c.id}" data-id="${x.id}" aria-label="${x.is_completed?'改回未完成':'完成'}"></button>
-            <div class="body"><div class="text">${esc(x.content)}</div>${meta?`<div class="meta">${meta}</div>`:''}</div>
-            <div class="actions">
-              <button class="icon" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
-              <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
-            </div></div>`}).join(''):'<div class="empty">還沒有子任務。</div>'}
+        <div class="label" style="margin-top:14px">子任務<span style="margin-left:6px">點名稱可編輯備註與日期</span></div>
+        ${a.length?a.map(x=>subRowHTML(c,x)).join(''):'<div class="empty">還沒有子任務。</div>'}
         <div class="label" style="margin-top:16px">新增子任務</div>
         <div class="subform">
-          <div class="field"><span class="fieldCaption">子任務</span><input id="ct-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才送審"></div>
+          <div class="chips"><span class="fieldCaption">常用</span>
+            <button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="求才證明書">求才證明書</button>
+            <button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="無違反法令證明書">無違反法令證明書</button>
+          </div>
+          <div class="field"><span class="fieldCaption">子任務</span><input id="ct-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才登記"></div>
           <div class="field"><span class="fieldCaption">狀態</span><input id="cs-${c.id}" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：審查中"></div>
           <div class="fieldRow">
-            <div class="field"><span class="fieldCaption">辦理日／預計日</span><input id="cd-${c.id}" type="date"></div>
-            <div class="field"><span class="fieldCaption">效期／截止日</span><input id="ce-${c.id}" type="date"></div>
+            <div class="field"><span class="fieldCaption">領證日</span><input id="ci-${c.id}" type="date"></div>
+            <div class="field"><span class="fieldCaption">效期到期日<span class="ruleHint" id="ch-${c.id}"></span></span><input id="ce-${c.id}" type="date"></div>
           </div>
+          <div class="tiny" style="margin-top:0">求才證明書填了領證日，效期會自動帶入 +90 天，之後仍可手動改。</div>
         </div>
         <div class="caseFoot">
           <button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>
@@ -345,8 +394,23 @@ function renderCases(){
       </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
 
   Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
+  box.querySelectorAll('input[id^="ct-"],input[id^="se-c-"]').forEach(el=>updateHint(el));
   if(actId){const el=document.getElementById(actId);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
   return cases.length;
+}
+// 找出同一組的 名稱／領證日／效期 欄位
+function trio(el){
+  const id=el.id||'';let m;
+  if(m=id.match(/^se-[cie]-(.+)$/))return{name:$('#se-c-'+m[1]),issue:$('#se-i-'+m[1]),exp:$('#se-e-'+m[1]),hint:$('#se-h-'+m[1])};
+  if(m=id.match(/^c[tie]-(.+)$/))return{name:$('#ct-'+m[1]),issue:$('#ci-'+m[1]),exp:$('#ce-'+m[1]),hint:$('#ch-'+m[1])};
+  return null;
+}
+function updateHint(el){const t=trio(el);if(!t||!t.hint)return;const r=ruleFor(t.name&&t.name.value);t.hint.textContent=r?`領證日 +${r.days} 天`:''}
+function autoExpiry(el){
+  const t=trio(el);if(!t)return;updateHint(el);
+  if(el!==t.issue&&el!==t.name)return;
+  const r=ruleFor(t.name&&t.name.value);
+  if(r&&t.issue&&t.issue.value)t.exp.value=addDays(t.issue.value,r.days);
 }
 
 /* ---------- 近期 ---------- */
@@ -355,8 +419,8 @@ function renderUpcoming(){
   items.filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項'}));
   cases.forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{
     const t=c.name+' › '+x.content;
-    if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理／預計日`:'辦理／預計日'});
-    if(x.expiry_date)u.push({d:x.expiry_date,t,m:'效期／截止日'});
+    if(x.task_date)u.push({d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
+    if(x.expiry_date)u.push({d:x.expiry_date,t,m:x.issue_date?`效期到期・${ymd(x.issue_date)} 領證`:'效期到期'});
   }));
   u.sort((a,b)=>a.d.localeCompare(b.d));
   const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
@@ -472,9 +536,11 @@ $('#caseForm').addEventListener('submit',async e=>{
 async function addSub(cid){
   const g=p=>document.getElementById(p+cid),ct=g('ct-');
   const content=ct.value.trim();if(!content){ct.focus();return}
-  const row={user_id:user.id,case_id:cid,content,status:g('cs-').value.trim()||null,task_date:g('cd-').value||null,expiry_date:g('ce-').value||null};
-  ['ct-','cs-','cd-','ce-'].forEach(p=>g(p).value='');
-  if(!await run(client.from('capture_case_subtasks').insert(row))){ct.value=content;return}
+  const row={user_id:user.id,case_id:cid,content,status:g('cs-').value.trim()||null,expiry_date:g('ce-').value||null};
+  if(g('ci-').value)row.issue_date=g('ci-').value;
+  const keep=['ct-','cs-','ci-','ce-'].map(p=>g(p).value);
+  ['ct-','cs-','ci-','ce-'].forEach(p=>g(p).value='');
+  if(!await run(client.from('capture_case_subtasks').insert(row))){['ct-','cs-','ci-','ce-'].forEach((p,i)=>g(p).value=keep[i]);return}
   refresh('cases');
 }
 
@@ -516,6 +582,24 @@ document.addEventListener('click',async e=>{
     case 'sub-del':
       if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
     case 'sub-add':addSub(cid);break;
+    case 'sub-tpl':{const el=document.getElementById('ct-'+cid);el.value=b.dataset.name;autoExpiry(el);document.getElementById('ci-'+cid).focus();break;}
+    case 'sub-edit':openSubs.has(id)?openSubs.delete(id):openSubs.add(id);renderCases();
+      if(openSubs.has(id))document.getElementById('se-i-'+id)?.scrollIntoView({block:'nearest',behavior:'smooth'});break;
+    case 'sub-save':{
+      if(!sub)break;const g=p=>document.getElementById(p+id);
+      const content=g('se-c-').value.trim()||sub.content;
+      const patch={content,status:g('se-s-').value.trim()||null,expiry_date:g('se-e-').value||null};
+      const iss=g('se-i-').value||null,notes=g('se-n-').value;
+      if(iss!==(sub.issue_date||null))patch.issue_date=iss;
+      if(notes!==(sub.notes||''))patch.notes=notes||null;
+      if(await run(client.from('capture_case_subtasks').update(patch).eq('id',id))){
+        const oldNow=cs.name+' › '+sub.content;
+        if(current===oldNow&&content!==sub.content){current=cs.name+' › '+content;store.set(K.now,current)}
+        openSubs.delete(id);refresh('cases');
+      }
+      break;}
+    case 'sub-cleartask':
+      if(sub&&await run(client.from('capture_case_subtasks').update({task_date:null}).eq('id',id)))refresh('cases');break;
     case 'case-del':
       if(cs&&confirm(`刪除案件「${cs.name}」與所有子任務？`)&&await run(client.from('capture_cases').delete().eq('id',cid))){openCases.delete(cid);store.set(K.open,JSON.stringify([...openCases]));refresh('cases')}
       break;
@@ -538,6 +622,8 @@ caseList.addEventListener('focusout',async e=>{
   c.notes=t.value;
   if(await run(client.from('capture_cases').update({notes:t.value}).eq('id',c.id)))pill('● 備註已儲存','ok');
 });
+caseList.addEventListener('input',e=>autoExpiry(e.target));
+caseList.addEventListener('change',e=>autoExpiry(e.target));
 caseList.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();addSub(e.target.dataset.enter)}
 });
