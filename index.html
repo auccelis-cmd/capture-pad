@@ -123,6 +123,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .subEdit{display:grid;gap:9px;background:var(--raised);border:1px solid var(--line);border-radius:11px;padding:12px;margin:0 0 10px 30px}
 .subEdit input,.subEdit textarea{background:var(--surface)}
 .subEdit .caseFoot{margin-top:2px}
+.itemEdit{margin-top:2px}
 .ruleHint{font-weight:500;color:var(--accent);margin-left:6px}
 select{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:9px 10px;font-size:16px;width:100%;min-width:0;outline:none}
 select:focus{border-color:var(--accent)}
@@ -274,7 +275,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.3.2</div>
+  <div>Capture Pad v1.3.3</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -324,7 +325,7 @@ const TPL=[['求才證明書','jc'],['無違反法令證明書','nv'],['勞動�
 function guessType(name){for(const k of ['takeover','reentry','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
 const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
 const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
-let openSubs=new Set();
+let openSubs=new Set(),openItems=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
 async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
@@ -349,19 +350,31 @@ function renderGeneral(){
   const doneAll=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   const doneToday=doneAll.filter(x=>isToday(x.updated_at));
   $('#openCount').textContent=open.length?`${open.length} 件`:'';
-  $('#openList').innerHTML=open.length?open.map(x=>{
+  const ol=$('#openList'),saved={};ol.querySelectorAll('input[id]').forEach(el=>saved[el.id]=el.value);
+  const actId=ol.contains(document.activeElement)?document.activeElement.id:null;
+  ol.innerHTML=open.length?open.map(x=>{
     const late=x.planned_date&&dayDiff(x.planned_date)<0,bits=[];
     if(x.planned_date)bits.push(`<span class="due${late?' late':''}">${late?'逾期':'預計'} ${dueLabel(x.planned_date)}</span>`);
     bits.push('記錄 '+stamp(x.created_at));
     if(x.is_pinned)bits.push('已釘選');
     return `<div class="row${current===x.content?' isNow':''}">
       <button class="check" data-act="done" data-id="${x.id}" aria-label="完成"></button>
-      <div class="body"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div></div>
+      <div class="body clickable" data-act="item-edit" data-id="${x.id}" title="點擊修改內容與日期"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div></div>
       <div class="actions">
         <button class="icon" data-act="now" data-id="${x.id}" title="設為正在做" aria-label="設為正在做">▶</button>
         <button class="icon${x.is_pinned?' pin':''}" data-act="pin" data-id="${x.id}" title="釘選" aria-label="釘選">⌖</button>
         <button class="icon" data-act="del" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
-      </div></div>`}).join(''):`<div class="empty">很好，暫時沒有東西追著妳跑。</div>`;
+      </div></div>`+(openItems.has(x.id)?`<div class="subEdit itemEdit">
+        <div class="field"><span class="fieldCaption">內容</span><input id="it-name-${x.id}" data-save="${x.id}" enterkeyhint="done" value="${esc(x.content)}"></div>
+        <div class="field"><span class="fieldCaption">預計日期</span>
+          <div class="dateRow" style="margin-top:0"><input id="it-date-${x.id}" type="date" value="${x.planned_date||''}">
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="0">今天</button>
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="1">明天</button>
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="">不指定</button></div></div>
+        <div class="caseFoot"><button class="btn ghost" data-act="item-edit" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="item-save" data-id="${x.id}">儲存</button></div>
+      </div>`:'')}).join(''):`<div class="empty">很好，暫時沒有東西追著妳跑。</div>`;
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
+  if(actId)document.getElementById(actId)?.focus({preventScroll:true});
   $('#doneList').innerHTML=doneToday.length?doneToday.map(x=>`<div class="row done">
       <div class="body"><div class="text">${esc(x.content)}</div><div class="meta">完成 ${stamp(x.updated_at)}</div></div>
       <button class="icon" data-act="undo" data-id="${x.id}" title="還原" aria-label="還原">↶</button></div>`).join(''):`<div class="empty">今天還沒有完成紀錄。</div>`;
@@ -612,6 +625,15 @@ $('#caseForm').addEventListener('submit',async e=>{
 });
 // 讀出一組欄位要寫進資料庫的值
 function readDates(key){const v=r=>F(key,r)?(F(key,r).value||null):null;return{issue_date:v('from'),expiry_date:v('exp'),dhl_date:v('dhl')}}
+async function saveItem(id){
+  const it=items.find(x=>x.id===id);if(!it)return;
+  const content=document.getElementById('it-name-'+id).value.trim()||it.content;
+  const planned_date=document.getElementById('it-date-'+id).value||null;
+  const wasNow=current===it.content;
+  if(!await run(client.from('capture_items').update({content,planned_date}).eq('id',id)))return;
+  if(wasNow&&content!==it.content){current=content;store.set(K.now,current)}
+  openItems.delete(id);refresh('items');
+}
 async function addSub(cid){
   const key='c-'+cid,nameEl=F(key,'name');
   const content=nameEl.value.trim();if(!content){nameEl.focus();return}
@@ -663,6 +685,10 @@ document.addEventListener('click',async e=>{
     case 'sub-del':
       if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
     case 'sub-add':addSub(cid);break;
+    case 'item-edit':openItems.has(id)?openItems.delete(id):openItems.add(id);renderGeneral();
+      if(openItems.has(id))document.getElementById('it-name-'+id)?.focus();break;
+    case 'it-date':{const el=document.getElementById('it-date-'+id);if(el)el.value=b.dataset.off===''?'':todayISO(+b.dataset.off);break;}
+    case 'item-save':saveItem(id);break;
     case 'sub-tpl':{const key='c-'+cid,sel=F(key,'type');F(key,'name').value=b.dataset.name;sel.value=b.dataset.type;sel.dataset.manual='1';rebuildDates(key);
       (F(key,'from')||F(key,'dhl')||F(key,'status')).focus();break;}
     case 'sub-edit':openSubs.has(id)?openSubs.delete(id):openSubs.add(id);renderCases();
@@ -693,6 +719,9 @@ document.addEventListener('click',async e=>{
     case 'reset':
       if(confirm('清除這台裝置的連接設定並重新設定？（雲端資料不受影響）')){store.set(K.cfg,'');location.reload()}break;
   }
+});
+$('#openList').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.save){e.preventDefault();saveItem(e.target.dataset.save)}
 });
 const caseList=$('#caseList');
 caseList.addEventListener('toggle',e=>{
