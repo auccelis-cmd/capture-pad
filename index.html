@@ -139,7 +139,39 @@ select{border:1px solid var(--line);border-radius:9px;background:var(--bg);color
 select:focus{border-color:var(--accent)}
 .subEdit select{background:var(--surface)}
 .subform:empty{display:none}
-.arrTag{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.stageTag{font-size:11.5px;color:var(--muted);white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.stageTag.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.stageTag.accent{color:var(--accent);border-color:rgba(143,181,161,.4)}
+.stepper{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0 14px}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.step::before{content:"";position:absolute;top:6px;right:50%;width:100%;height:2px;background:var(--line)}
+.step:first-child::before{display:none}
+.step.done::before,.step.active::before,.step.plan::before{background:var(--accent)}
+.step.plan::before{opacity:.45}
+.sdot{position:relative;z-index:1;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--line)}
+.step.done .sdot{background:var(--accent);border-color:var(--accent)}
+.step.plan .sdot{border-color:var(--accent);border-style:dashed}
+.step.active .sdot{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.step.alert .sdot{border-color:var(--warn);box-shadow:0 0 0 4px rgba(216,176,106,.15)}
+.slabel{font-size:12px;font-weight:600;color:var(--muted)}
+.step.done .slabel,.step.active .slabel{color:var(--ink)}
+.sdate{font-family:var(--serif);font-size:12.5px;font-weight:700;color:var(--faint)}
+.step.done .sdate,.step.active .sdate{color:var(--accent)}
+.step.alert .sdate{color:var(--warn)}
+.caseDates{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.logAdd{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center}
+.logAdd input[type=date]{width:auto;padding:7px 8px;font-size:13.5px}
+.logAdd input{padding:8px 10px}
+.logList{margin-top:6px}
+.logRow{display:flex;align-items:flex-start;gap:10px;padding:6px 0 6px 2px;border-bottom:1px dashed var(--line-soft)}
+.logDate{font-family:var(--serif);font-weight:700;font-size:13px;color:var(--accent);min-width:42px;padding-top:1px}
+.logText{flex:1;min-width:0;font-size:13.5px;word-break:break-word;padding-top:2px}
+.logRow .icon{width:26px;height:26px;font-size:13px}
+.footLeft{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.ctype{width:auto;padding:4px 8px;font-size:12px;border-radius:7px;color:var(--muted);background:transparent}
+.caseOpts{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.caseOpts select{width:auto;padding:6px 9px;font-size:13px}
+.caseOpts .tplCheck{margin-top:0}
 .tplCheck{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;color:var(--muted);cursor:pointer}
 .tplCheck input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
 .tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:600;color:var(--accent);border:1px solid rgba(143,181,161,.35);border-radius:5px;padding:0 5px;vertical-align:2px;line-height:1.6}
@@ -198,8 +230,12 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   .tabs .n.late{color:var(--danger);font-weight:700}
   .fieldRow{grid-template-columns:1fr}
   .subEdit{margin-left:0}
+  .caseDates{grid-template-columns:1fr 1fr}
+  .logAdd{grid-template-columns:1fr auto}
+  .logAdd input[type=date]{grid-column:1/-1;width:100%}
+  .ctype,.caseOpts select{font-size:16px}
 }
-@media(min-width:981px){input,textarea,select{font-size:14px}.capture input{font-size:15px}}
+@media(min-width:981px){input,textarea,select{font-size:14px}.caseDates input{font-size:13px;padding:8px 7px}.capture input{font-size:15px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -279,7 +315,8 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
     <form class="card" id="caseForm">
       <div class="label">新增案件</div>
       <div class="caseForm"><input id="caseName" autocomplete="off" placeholder="例如：苗林新案"><button class="btn">新增</button></div>
-      <label class="tplCheck"><input type="checkbox" id="caseTpl" checked> 自動建立完整流程（15 項子任務）</label>
+      <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="general">一般案件</option></select>
+      <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 自動建立完整流程（15 項）</label></div>
     </form>
     <div id="caseList"></div>
   </section>
@@ -294,7 +331,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.5.1</div>
+  <div>Capture Pad v1.6</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -358,6 +395,32 @@ function flowIdx(x){
   const t=typeOf(x);if(FLOW_BY_TYPE[t])return FLOW.indexOf(FLOW_BY_TYPE[t]);
   i=FLOW.findIndex(f=>n.includes(f));return i>=0?i:999;
 }
+// ── 入境案件進度
+const ABROAD_ALERT=30;   // 挑工後超過幾天還沒送簽就提醒追進度
+const isEntry=c=>(c.case_type||'entry')==='entry';
+const md=d=>{const dt=parseD(d);return`${dt.getMonth()+1}/${dt.getDate()}`};
+const since=d=>-dayDiff(d);
+const CASE_DATES=[['pick_date','挑工日'],['visa_submit_date','送簽日'],['visa_get_date','領簽日'],['arrival_date','安排入境日']];
+function stageOf(c){
+  if(!c.pick_date)return{label:'待挑工',cls:''};
+  if(dayDiff(c.pick_date)>0)return{label:`預計挑工 ${md(c.pick_date)}`,cls:''};
+  if(!c.visa_submit_date){const n=since(c.pick_date);return{label:`國外作業中・${n} 天`,cls:n>=ABROAD_ALERT?'warn':''}}
+  if(!c.visa_get_date)return{label:`送簽中・${Math.max(0,since(c.visa_submit_date))} 天`,cls:''};
+  if(!c.arrival_date)return{label:'已領簽・待排入境',cls:'warn'};
+  return dayDiff(c.arrival_date)>0?{label:`入境 ${md(c.arrival_date)}`,cls:'accent'}:{label:`已入境 ${md(c.arrival_date)}`,cls:''};
+}
+function stepperHTML(c){
+  const st=d=>!d?'todo':dayDiff(d)>0?'plan':'done';
+  const picked=c.pick_date&&dayDiff(c.pick_date)<=0;
+  const days=picked?(c.visa_submit_date?Math.max(0,dayDiff(c.visa_submit_date)-dayDiff(c.pick_date)):since(c.pick_date)):null;
+  const abroad=c.visa_submit_date?'done':picked?'active':'todo';
+  const steps=[['挑工',st(c.pick_date),c.pick_date?md(c.pick_date):'—'],
+    ['國外作業',abroad,days!=null?`${days} 天`:'—'],
+    ['送簽',st(c.visa_submit_date),c.visa_submit_date?md(c.visa_submit_date):'—'],
+    ['領簽',st(c.visa_get_date),c.visa_get_date?md(c.visa_get_date):'—'],
+    ['入境',st(c.arrival_date),c.arrival_date?md(c.arrival_date):'—']];
+  return `<div class="stepper">${steps.map(([l,s,d])=>`<div class="step ${s}${s==='active'&&days>=ABROAD_ALERT?' alert':''}"><span class="sdot"></span><span class="slabel">${l}</span><span class="sdate">${d}</span></div>`).join('')}</div>`;
+}
 // 期限：入境類看案件入境日，其他看效期欄位
 function dueOf(c,x){const T=TYPES[typeOf(x)];if(T.arr!=null)return c.arrival_date?addDays(c.arrival_date,T.arr):null;return x.expiry_date||null}
 const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
@@ -366,7 +429,7 @@ let openSubs=new Set(),openItems=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
 async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
-  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
 /* ---------- 正在做 ---------- */
@@ -568,9 +631,14 @@ function renderCases(){
   box.innerHTML=cases.length?cases.map(c=>{
     const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length,key='c-'+c.id;
     return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
-      <summary><span class="caseTitle">${esc(c.name)}</span>${c.arrival_date?`<span class="arrTag">入境 ${ymd(c.arrival_date).slice(5)}</span>`:''}<span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
+      <summary><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):''}<span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
       <div class="caseBody">
-        <div class="field" style="max-width:240px;margin-bottom:12px"><span class="fieldCaption">入境日</span><input id="arr-${c.id}" data-arr="${c.id}" type="date" value="${c.arrival_date||''}"></div>
+        ${isEntry(c)?`${stepperHTML(c)}
+        <div class="caseDates">${CASE_DATES.map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="cf-${f}-${c.id}" data-cfield="${f}" data-cid="${c.id}" type="date" value="${c[f]||''}"></div>`).join('')}</div>
+        <div class="label" style="margin-top:14px">國外進度追蹤</div>
+        <div class="logAdd"><input id="log-d-${c.id}" type="date" value="${todayISO()}"><input id="log-t-${c.id}" data-logenter="${c.id}" enterkeyhint="done" placeholder="例如：體檢完成、護照送件…"><button type="button" class="btn secondary" data-act="log-add" data-cid="${c.id}">記錄</button></div>
+        <div class="logList">${(c.progress_log||[]).map(e=>`<div class="logRow"><span class="logDate">${md(e.d)}</span><span class="logText">${esc(e.t)}</span><button class="icon" data-act="log-del" data-cid="${c.id}" data-lid="${esc(e.id)}" title="刪除" aria-label="刪除">×</button></div>`).join('')}</div>
+        <div style="height:14px"></div>`:''}
         <div class="label">備註</div>
         <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
         <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
@@ -589,7 +657,7 @@ function renderCases(){
           <div id="${key}-dates" class="subform"></div>
         </div>
         <div class="caseFoot">
-          <span><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button><button class="btn ghost" data-act="case-flow" data-cid="${c.id}">補上完整流程</button></span>
+          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${isEntry(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">補上完整流程</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型"><option value="entry"${isEntry(c)?' selected':''}>入境案件</option><option value="general"${isEntry(c)?'':' selected'}>一般案件</option></select></span>
           <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
         </div>
       </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
@@ -618,6 +686,13 @@ function renderUpcoming(){
     else if(due)u.push({...ref,d:due,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
     if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({...ref,d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
+  cases.filter(isEntry).forEach(c=>{
+    if(c.arrival_date&&dayDiff(c.arrival_date)>=0)u.push({k:'case',d:c.arrival_date,t:c.name,m:'安排入境日'});
+    if(c.pick_date&&!c.visa_submit_date&&dayDiff(c.pick_date)<=0){
+      const n=since(c.pick_date);
+      if(n>=ABROAD_ALERT-7)u.push({k:'case',d:addDays(c.pick_date,ABROAD_ALERT),t:c.name,m:`國外作業已 ${n} 天・該追進度了`});
+    }
+  });
   u.sort((a,b)=>a.d.localeCompare(b.d));
   const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
   let html='';
@@ -626,7 +701,7 @@ function renderUpcoming(){
     html+=`<div class="upGroup ${cls}">${name}<span class="n">${g.length}</span></div>`+g.slice(0,40).map(x=>`<div class="upItem ${cls}">
       <div class="upDate">${dueLabel(x.d)}</div>
       <div class="body"><div class="upTitle">${esc(x.t)}</div><div class="meta">${esc(x.m)}</div></div>
-      <button class="icon${inFocus(x.k,x.id)?' on':''}" data-act="up-now" data-k="${x.k}" data-id="${x.id}" data-cid="${x.cid||''}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button></div>`).join('');
+      ${x.k==='case'?'':`<button class="icon${inFocus(x.k,x.id)?' on':''}" data-act="up-now" data-k="${x.k}" data-id="${x.id}" data-cid="${x.cid||''}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button>`}</div>`).join('');
   });
   $('#upcomingList').innerHTML=html||'<div class="card empty">目前沒有有日期的事項。新增時選個日期，就會出現在這裡。</div>';
   return u.filter(x=>dayDiff(x.d)<=0).length;
@@ -727,11 +802,21 @@ $('#caseForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const el=$('#caseName'),name=el.value.trim();if(!name){el.focus();return}
   el.value='';pill('同步中…');
-  const {data,error}=await client.from('capture_cases').insert({user_id:user.id,name}).select().single();
+  const type=$('#caseType').value,row={user_id:user.id,name};if(type!=='entry')row.case_type=type;
+  const {data,error}=await client.from('capture_cases').insert(row).select().single();
   if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
-  if($('#caseTpl').checked&&data){await insertFlow(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
+  if(type==='entry'&&$('#caseTpl').checked&&data){await insertFlow(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
+async function addLog(cid){
+  const c=cases.find(x=>x.id===cid),te=document.getElementById('log-t-'+cid);if(!c||!te)return;
+  const t=te.value.trim();if(!t){te.focus();return}
+  const d=document.getElementById('log-d-'+cid).value||todayISO();
+  const log=[{id:Date.now().toString(36),d,t},...(c.progress_log||[])].sort((a,b)=>b.d.localeCompare(a.d));
+  te.value='';const prev=c.progress_log;c.progress_log=log;renderAll();
+  if(!await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid))){c.progress_log=prev;te.value=t;renderAll();return}
+  refresh('cases');
+}
 async function insertFlow(cid){
   const have=new Set((subs[cid]||[]).map(flowIdx));
   const todo=FLOW.filter((n,i)=>!have.has(i));if(!todo.length)return 0;
@@ -800,6 +885,11 @@ document.addEventListener('click',async e=>{
     case 'sub-del':
       if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
     case 'sub-add':addSub(cid);break;
+    case 'log-add':addLog(cid);break;
+    case 'log-del':{
+      if(!cs||!confirm('刪除這筆追蹤紀錄？'))break;
+      const log=(cs.progress_log||[]).filter(e=>e.id!==b.dataset.lid);cs.progress_log=log;renderAll();
+      if(await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid)))refresh('cases');break;}
     case 'case-flow':{
       const have=new Set((subs[cid]||[]).map(flowIdx)),todo=FLOW.filter((n,i)=>!have.has(i));
       if(!todo.length){pill('流程已經完整','ok');break}
@@ -841,6 +931,7 @@ document.addEventListener('click',async e=>{
 $('#openList').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.save){e.preventDefault();saveItem(e.target.dataset.save)}
 });
+$('#caseType').addEventListener('change',e=>show('#caseTplWrap',e.target.value==='entry'));
 const caseList=$('#caseList');
 caseList.addEventListener('toggle',e=>{
   const d=e.target;if(!d.matches||!d.matches('details.caseCard'))return;
@@ -854,15 +945,22 @@ caseList.addEventListener('focusout',async e=>{
   if(await run(client.from('capture_cases').update({notes:t.value}).eq('id',c.id)))pill('● 備註已儲存','ok');
 });
 caseList.addEventListener('change',async e=>{
-  const t=e.target;if(!t.dataset||!t.dataset.arr)return;
-  const c=cases.find(x=>x.id===t.dataset.arr);if(!c||(c.arrival_date||'')===t.value)return;
-  c.arrival_date=t.value||null;renderAll();
-  if(await run(client.from('capture_cases').update({arrival_date:t.value||null}).eq('id',c.id)))refresh('cases');
+  const t=e.target;if(!t.dataset)return;
+  if(t.dataset.cfield){
+    const f=t.dataset.cfield,c=cases.find(x=>x.id===t.dataset.cid);if(!c||(c[f]||'')===t.value)return;
+    c[f]=t.value||null;renderAll();
+    if(await run(client.from('capture_cases').update({[f]:t.value||null}).eq('id',c.id)))refresh('cases');
+  }else if(t.dataset.ctype){
+    const c=cases.find(x=>x.id===t.dataset.ctype);if(!c)return;
+    c.case_type=t.value;renderAll();
+    if(await run(client.from('capture_cases').update({case_type:t.value}).eq('id',c.id)))refresh('cases');
+  }
 });
 caseList.addEventListener('input',onField);
 caseList.addEventListener('change',onField);
 caseList.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();addSub(e.target.dataset.enter)}
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.logenter){e.preventDefault();addLog(e.target.dataset.logenter)}
 });
 
 function setTab(t){
