@@ -179,11 +179,13 @@ select:focus{border-color:var(--accent)}
 .pickItems{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 10px;padding-left:2px}
 .pickItem{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:5px 2px;cursor:pointer;border-radius:6px}
 .pickItem.had{color:var(--faint);cursor:default}
-.hadTag{font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.hadTag{white-space:nowrap;margin-left:2px;font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 5px}
 .picker input[type=checkbox]{width:16px;height:16px;margin:0;flex:none;accent-color:var(--accent)}
 .btn:disabled{opacity:.4;cursor:default;filter:none}
 .tkTop{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
-.tkTop .field{width:200px}
+.tkTop .field{width:180px}
+.tkInfo{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink);background:rgba(216,176,106,.08);border:1px solid rgba(216,176,106,.3);border-radius:9px;padding:8px 10px}
+.tkInfo b{color:var(--warn)}
 .tkCheck{margin:0 0 10px}
 .caseOpts{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
 .caseOpts select{width:auto;padding:6px 9px;font-size:13px}
@@ -364,7 +366,7 @@ body[data-bg="stars"] #bgStars{opacity:1}
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
   <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
-  <div>Capture Pad v1.9.2</div>
+  <div>Capture Pad v2.0</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -410,10 +412,13 @@ const TYPES={
   takeover:{label:'承接登記',short:'承接登記',from:'登記日',expLabel:'登記到期日',rule:'登記日當天起算 60 天內',calc:d=>addDays(d,59),match:/承接登記/},
   tkmol:{label:'勞動部函（承接）',short:'承接函',from:'發文日',noExp:true,rule:'隨時可以承接',match:/承接函/},
   // 依「案件承接日」自動算期限
-  tknotify:{label:'接續通報',short:'承接起 3 日',tk:2,rule:'承接日當天起算 3 日內',match:/接續通報/},
-  tkhire:{label:'接續聘僱',short:'承接起 15 日',tk:14,rule:'承接日當天起算 15 日內',match:/接續聘僱/},
-  tkres:{label:'接續居留展延',short:'居留展延',tk:c=>c.expiry_transfer?2:14,res:true,
-    rule:c=>c.expiry_transfer?'期滿轉換：跟接續通報一起，承接日當天起算 3 日內':'跟接續聘僱一起，承接日當天起算 15 日內',match:/居留展延|接續居留/},
+  tknotify:{label:'接續通報',short:'通報',tk:1,tkDue:c=>tkNotifyDue(c),rule:c=>isExpiryTk(c)?'轉換合意日起 3 日內，且最晚在期滿日前送（要一起送一站式居留證）':'承接日當天起算 3 日內',match:/接續通報/},
+  tkhire:{label:'接續聘僱',short:'聘僱',tk:1,tkDue:c=>{const b=tkBase(c);return b?addDays(b,14):null},rule:c=>isExpiryTk(c)?'轉換合意日起 15 日內':'承接日當天起算 15 日內',match:/接續聘僱/},
+  tkres:{label:'接續居留展延',short:'居留展延',tk:1,res:true,tkDue:(c,x)=>{
+      if(!isExpiryTk(c)){const b=tkBase(c);return b?addDays(b,14):null}
+      const d=tkNotifyDue(c);return d&&x&&x.expiry_date&&x.expiry_date<d?x.expiry_date:d},
+    rule:c=>isExpiryTk(c)?'期滿轉換：跟接續通報一起送一站式居留證（居留效期會在期滿日前一天或當天屆滿）':'跟接續聘僱一起，承接日當天起算 15 日內；留意居留效期',match:/居留展延|接續居留/},
+  tkend:{label:'終止聘僱許可函',short:'終止函',from:'發文日',noExp:true,rule:'雙方合意才需要',match:/終止聘僱/},
   verify:{label:'驗證文件',short:'驗證',dhl:true,match:/驗證/},
   // 依「案件入境日」自動算期限
   care:{label:'機場關懷',short:'入境前 3 天',arr:-3,rule:'入境三天前',match:/機場關懷/},
@@ -423,25 +428,25 @@ const TYPES={
   permit:{label:'聘僱許可',short:'入境 +15',arr:15,rule:'入境隔日起 15 天內',match:/聘僱許可/},
   arc:{label:'初次居留證',short:'入境 +30',arr:30,rule:'入境隔日起 30 天內',match:/初次居留/}
 };
-const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','takeover','tkmol','tknotify','tkhire','tkres','verify','care','pickup','notify','exam','permit','arc'];
+const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','takeover','tkmol','tkend','tknotify','tkhire','tkres','verify','care','pickup','notify','exam','permit','arc'];
 const TPL=[['求才證明書','jc'],['無違反證明書','nv'],['勞動部函','mol'],['入簽函','entry'],['重入簽函','reentry'],['承接登記','takeover'],['驗證文件','verify']];
 // 完整案件流程（依序）
 const FLOW=['求才登記','無違反法令申請','求才送審','無違反證明書','求才證明書','勞動部函','入簽函','驗證文件','機場關懷','接機安排','入國通報','入境體檢','初次居留證','聘僱許可','卡式居留證'];
-function guessType(name){for(const k of ['tknotify','tkhire','tkres','tkmol','takeover','reentry','notify','care','pickup','exam','permit','arc','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
+function guessType(name){for(const k of ['tknotify','tkhire','tkres','tkend','tkmol','takeover','reentry','notify','care','pickup','exam','permit','arc','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
 const FLOW_BY_TYPE={jc:'求才證明書',nv:'無違反證明書',mol:'勞動部函',entry:'入簽函',reentry:'入簽函',verify:'驗證文件',care:'機場關懷',pickup:'接機安排',notify:'入國通報',exam:'入境體檢',arc:'初次居留證',permit:'聘僱許可'};
 const FLOW_GROUPS=[['申請階段',[0,1,2,3,4,5,6]],['國外作業',[7]],['入境',[8,9,10,11,12,13,14]]];
 let pickOpen=new Set();
 // 承接案件流程（之後依實務補齊）
-const TK_FLOW=['求才登記','求才送審','無違反登記','勞動部函','承接登記','承接日確認','接續通報','接續聘僱','接續居留展延'];
+const TK_FLOW=['求才登記','求才送審','無違反登記','勞動部函','終止聘僱許可函','承接登記','承接日確認','接續通報','接續聘僱','接續居留展延'];
 const TK_DOC={'勞動部函':'tkmol'};   // 承接流程裡要指定類型的項目
-const TK_HINT={'承接登記':'沒有工業局函時才需要'};
+const TK_HINT={'承接登記':'沒有工業局函時才需要','終止聘僱許可函':'雙方合意才需要'};
 const CASE_TYPES=[['entry','入境案件'],['takeover','承接案件'],['general','一般案件']];
 const caseType=c=>['takeover','general'].includes(c.case_type)?c.case_type:'entry';
 const FLOWS={
   entry:{list:FLOW,groups:FLOW_GROUPS,idx:x=>flowIdx(x)},
-  takeover:{list:TK_FLOW,groups:[['申請階段',[0,1,2]],['承接文件',[3,4]],['承接後',[5,6,7,8]]],doc:TK_DOC,hint:TK_HINT,idx:x=>{
+  takeover:{list:TK_FLOW,groups:[['申請階段',[0,1,2]],['承接文件',[3,4,5]],['承接後',[6,7,8,9]]],doc:TK_DOC,hint:TK_HINT,off:(c,n)=>n==='終止聘僱許可函'&&tkMode(c)!=='two',idx:x=>{
     const n=(x.content||'').trim();let i=TK_FLOW.indexOf(n);if(i>=0)return i;
-    const tm={takeover:'承接登記',tkmol:'勞動部函',mol:'勞動部函',tknotify:'接續通報',tkhire:'接續聘僱',tkres:'接續居留展延'}[typeOf(x)];if(tm)return TK_FLOW.indexOf(tm);
+    const tm={takeover:'承接登記',tkmol:'勞動部函',mol:'勞動部函',tkend:'終止聘僱許可函',tknotify:'接續通報',tkhire:'接續聘僱',tkres:'接續居留展延'}[typeOf(x)];if(tm)return TK_FLOW.indexOf(tm);
     i=TK_FLOW.findIndex(f=>n.includes(f));return i>=0?i:999}}
 };
 const flowOf=c=>FLOWS[caseType(c)]||null;
@@ -449,7 +454,7 @@ function pickerHTML(c){
   const F=flowOf(c),have=new Set((subs[c.id]||[]).map(F.idx));
   const groups=F.groups.map(([g,idx],gi)=>{
     const avail=idx.filter(i=>!have.has(i)).length;
-    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':' checked'}>${F.list[i]}${F.hint&&F.hint[F.list[i]]&&!had?`<span class="hadTag">${F.hint[F.list[i]]}</span>`:''}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
+    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':(F.off&&F.off(c,F.list[i])?'':' checked')}>${F.list[i]}${F.hint&&F.hint[F.list[i]]&&!had?`<span class="hadTag">${F.hint[F.list[i]]}</span>`:''}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
     return `<div class="pickGroup"><label class="pickGTitle"><input type="checkbox" id="pg-${c.id}-${gi}" data-pickgroup="${c.id}" data-g="${gi}"${avail?' checked':' disabled'}>${g}</label><div class="pickItems">${items}</div></div>`;
   }).join('');
   return `<div class="picker" id="picker-${c.id}">
@@ -488,19 +493,30 @@ function stageOf(c){
   return dayDiff(c.arrival_date)>0?{label:`入境 ${md(c.arrival_date)}`,cls:'accent'}:{label:`已入境 ${md(c.arrival_date)}`,cls:''};
 }
 function takeoverStage(c){
-  if(c.takeover_date)return dayDiff(c.takeover_date)>0?{label:`預定承接 ${md(c.takeover_date)}${c.expiry_transfer?'・期滿轉換':''}`,cls:'accent'}:{label:`已承接 ${md(c.takeover_date)}${c.expiry_transfer?'・期滿轉換':''}`,cls:''};
+  const ml=tkModeLabel(c),pre=ml?ml+'・':'';
+  if(isExpiryTk(c)&&c.contract_end_date){const n=dayDiff(c.contract_end_date);return{label:`${pre}期滿 ${md(c.contract_end_date)}`,cls:n<0?'':n<=7?'warn':'accent'}}
+  if(c.takeover_date)return dayDiff(c.takeover_date)>0?{label:`${pre}預定承接 ${md(c.takeover_date)}`,cls:'accent'}:{label:`${pre}已承接 ${md(c.takeover_date)}`,cls:''};
   const s=(subs[c.id]||[]).find(x=>typeOf(x)==='takeover'&&!x.is_completed&&x.expiry_date);
-  if(!s)return{label:'承接案件',cls:''};
+  if(!s)return{label:ml||'承接案件',cls:''};
   const n=dayDiff(s.expiry_date);
-  return{label:n<0?`登記已過期 ${md(s.expiry_date)}`:`登記到期 ${md(s.expiry_date)}`,cls:n<0?'late':n<=14?'warn':'accent'};
+  return{label:`${pre}${n<0?'登記已過期':'登記到期'} ${md(s.expiry_date)}`,cls:n<0?'late':n<=14?'warn':'accent'};
 }
 function nextThursday(){const d=new Date();d.setDate(d.getDate()+((4-d.getDay()+7)%7));return iso(d)}
 function takeoverTopHTML(c){
+  const m=tkMode(c),ex=m==='expiry';
+  const dateField=(f,l)=>`<div class="field"><span class="fieldCaption">${l}</span><input id="cf-${f}-${c.id}" data-cfield="${f}" data-cid="${c.id}" type="date" value="${c[f]||''}"></div>`;
+  let info='';
+  if(ex&&c.contract_end_date){
+    const n=tkNotifyDue(c);
+    info=`<div class="tkInfo">到新公司上班：<b>${md(addDays(c.contract_end_date,1))}</b>${n?`・接續通報最晚 <b>${md(n)}</b>`:''}・居留效期約在 <b>${md(addDays(c.contract_end_date,-1))}–${md(c.contract_end_date)}</b> 屆滿，送通報時要一起送一站式居留證</div>`;
+  }
   return `<div class="tkTop">
-    <div class="field"><span class="fieldCaption">承接日</span><input id="cf-takeover_date-${c.id}" data-cfield="takeover_date" data-cid="${c.id}" type="date" value="${c.takeover_date||''}"></div>
-    <label class="tplCheck tkCheck"><input type="checkbox" id="cb-${c.id}" data-cbool="expiry_transfer" data-cid="${c.id}"${c.expiry_transfer?' checked':''}> 期滿轉換案件<span class="tiny" style="margin:0 0 0 4px">（居留展延要跟接續通報一起辦）</span></label>
+    <div class="field"><span class="fieldCaption">承接方式</span><select id="cf-takeover_mode-${c.id}" data-cfield="takeover_mode" data-cid="${c.id}">
+      <option value=""${m?'':' selected'}>請選擇</option>${TK_MODES.map(([v,l])=>`<option value="${v}"${m===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    ${ex?dateField('contract_end_date','原雇主期滿日')+dateField('agree_date','轉換合意日'):dateField('takeover_date','承接日')}
   </div>
-  <div class="tiny" style="margin:6px 0 14px">勞動部函隨時可以承接；承接登記走就服站：每週二回報確認單、每週四可到就服站承接（最近的週四：${md(nextThursday())}）。</div>`;
+  ${info}
+  <div class="tiny" style="margin:6px 0 14px">${m==='two'?'雙方合意需要終止聘僱許可函。':m==='three'?'三方合意不需要終止聘僱許可函。':ex?'期滿轉換：外國人期滿隔日到新公司上班。':''}勞動部函隨時可以承接；承接登記走就服站：每週二回報確認單、每週四可到就服站承接（最近的週四：${md(nextThursday())}）。</div>`;
 }
 function stepperHTML(c){
   const st=d=>!d?'todo':dayDiff(d)>0?'plan':'done';
@@ -515,13 +531,26 @@ function stepperHTML(c){
   return `<div class="stepper">${steps.map(([l,s,d])=>`<div class="step ${s}${s==='active'&&days>=ABROAD_ALERT?' alert':''}"><span class="sdot"></span><span class="slabel">${l}</span><span class="sdate">${d}</span></div>`).join('')}</div>`;
 }
 // 期限：入境類看案件入境日，其他看效期欄位
+// 承接方式：two 雙方合意（要終止聘僱許可函）／three 三方合意／expiry 期滿轉換
+const TK_MODES=[['two','雙方合意'],['three','三方合意'],['expiry','期滿轉換']];
+const tkMode=c=>c.takeover_mode||(c.expiry_transfer?'expiry':'');
+const isExpiryTk=c=>tkMode(c)==='expiry';
+const tkModeLabel=c=>(TK_MODES.find(m=>m[0]===tkMode(c))||[,''])[1];
+// 期滿轉換看「轉換合意日」，其他看「承接日」；都是當天算第 1 天
+const tkBase=c=>isExpiryTk(c)?c.agree_date:c.takeover_date;
+function tkNotifyDue(c){
+  const b=tkBase(c);if(!b)return null;let d=addDays(b,2);
+  if(isExpiryTk(c)&&c.contract_end_date&&c.contract_end_date<d)d=c.contract_end_date;
+  return d;
+}
 const based=T=>T.arr!=null||T.tk!=null;
-const baseName=T=>T.arr!=null?'入境日':'承接日';
-const baseDate=(c,T)=>T.arr!=null?c.arrival_date:c.takeover_date;
+const baseName=(T,c)=>T.arr!=null?'入境日':(c&&isExpiryTk(c)?'轉換合意日':'承接日');
+const baseDate=(c,T)=>T.arr!=null?c.arrival_date:tkBase(c);
 const ruleOf=(T,c)=>typeof T.rule==='function'?T.rule(c):(T.rule||'');
 function dueOf(c,x){
   const T=TYPES[typeOf(x)];
-  if(based(T)){const b=baseDate(c,T);if(!b)return null;return addDays(b,T.arr!=null?T.arr:(typeof T.tk==='function'?T.tk(c):T.tk))}
+  if(T.tkDue)return T.tkDue(c,x);
+  if(based(T)){const b=baseDate(c,T);if(!b)return null;return addDays(b,T.arr)}
   return x.expiry_date||null;
 }
 const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
@@ -530,7 +559,7 @@ let openSubs=new Set(),openItems=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
 async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
-  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
 /* ---------- 正在做 ---------- */
@@ -693,7 +722,7 @@ function subRowHTML(c,x){
     x.status?esc(x.status):'',
     x.issue_date?`${T.from||'日期'} ${ymd(x.issue_date)}`:'',
     exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過期':(based(T)?'期限':T.expLabel?'到期':'效期到')} ${ymd(exp)}${late?`（逾期 ${-dd} 天）`:soon?`（${dd===0?'今天':dd===1?'明天':dd+' 天後'}）`:''}</span>`:'',
-    (based(T)&&!baseDate(c,T)&&!x.is_completed)?`填${baseName(T)}後自動算期限`:'',
+    (based(T)&&!baseDate(c,T)&&!x.is_completed)?`填${baseName(T,c)}後自動算期限`:'',
     (T.res&&x.expiry_date)?`<span class="due${!x.is_completed&&exp&&x.expiry_date<exp?' late':''}">居留效期 ${ymd(x.expiry_date)}${!x.is_completed&&exp&&x.expiry_date<exp?'（早於期限，注意逾期居留）':''}</span>`:'',
     x.dhl_date?`DHL 寄出 ${ymd(x.dhl_date)}`:'',
     x.task_date?`辦理 ${dueLabel(x.task_date)}`:''
@@ -716,7 +745,7 @@ function subRowHTML(c,x){
       <div class="field"><span class="fieldCaption">狀態</span><input id="${key}-status" value="${esc(x.status||'')}" placeholder="例如：審查中"></div>
     </div>
     <div id="${key}-dates" class="subform">${dateFields(key,t,{from:x.issue_date,exp:x.expiry_date,dhl:x.dhl_date})}</div>
-    ${based(T)?`<div class="tiny" style="margin-top:0">期限依案件${baseName(T)}自動計算：${ruleOf(T,c)}${baseDate(c,T)?`，目前為 ${ymd(exp)}`:''}</div>`:''}
+    ${based(T)?`<div class="tiny" style="margin-top:0">期限依案件${baseName(T,c)}自動計算：${ruleOf(T,c)}${baseDate(c,T)?`，目前為 ${ymd(exp)}`:''}</div>`:''}
     ${x.task_date?`<div class="tiny" style="margin-top:0">舊的辦理日：${ymd(x.task_date)} <button class="btn ghost" data-act="sub-cleartask" data-cid="${c.id}" data-id="${x.id}">清除</button></div>`:''}
     <div class="field"><span class="fieldCaption">備註</span><textarea id="${key}-notes" class="caseNote" placeholder="例如：文號、承辦人、補件內容…">${esc(x.notes||'')}</textarea></div>
     <div class="caseFoot"><button class="btn ghost" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="sub-save" data-cid="${c.id}" data-id="${x.id}">儲存</button></div>
@@ -796,7 +825,10 @@ function renderUpcoming(){
     else if(due)u.push({...ref,d:due,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
     if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({...ref,d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
-  cases.filter(c=>caseType(c)==='takeover'&&c.takeover_date&&dayDiff(c.takeover_date)>=0).forEach(c=>u.push({k:'case',d:c.takeover_date,t:c.name,m:c.expiry_transfer?'承接日・期滿轉換':'承接日'}));
+  cases.filter(c=>caseType(c)==='takeover').forEach(c=>{
+    if(isExpiryTk(c)){if(c.contract_end_date&&dayDiff(c.contract_end_date)>=0)u.push({k:'case',d:c.contract_end_date,t:c.name,m:'原雇主期滿日・隔日到新公司上班'})}
+    else if(c.takeover_date&&dayDiff(c.takeover_date)>=0)u.push({k:'case',d:c.takeover_date,t:c.name,m:`承接日${tkModeLabel(c)?'・'+tkModeLabel(c):''}`});
+  });
   cases.filter(isEntry).forEach(c=>{
     if(c.arrival_date&&dayDiff(c.arrival_date)>=0)u.push({k:'case',d:c.arrival_date,t:c.name,m:'安排入境日'});
     if(c.pick_date&&!c.visa_submit_date&&dayDiff(c.pick_date)<=0){

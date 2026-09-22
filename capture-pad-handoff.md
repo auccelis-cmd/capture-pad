@@ -5,7 +5,7 @@
 > 2. 把 `sw.js` 的 `CACHE` 版本號 +1，並更新頁尾版本號；
 > 3. 若需要新欄位，提供可重複執行的 SQL（`add column if not exists`），並在最後加 `notify pgrst, 'reload schema';`。
 >
-> 目前版本：**v1.9.2**（`sw.js` 的 CACHE = `capture-pad-v192`）
+> 目前版本：**v2.0**（`sw.js` 的 CACHE = `capture-pad-v200`）
 
 ---
 
@@ -58,8 +58,13 @@
 - 案件卡可摺疊（展開狀態存 localStorage）。
 - **案件類型**：`entry` 入境案件（預設，`case_type` 為 null 也視為入境）／`takeover` 承接案件／`general` 一般案件。
   - 入境案件：有進度軸、國外進度追蹤、15 項流程勾選器。
-  - 承接案件：沒有進度軸；案件上方有「承接日」`takeover_date` 與「期滿轉換案件」勾選 `expiry_transfer`，並提示就服站時程（每週二回報確認單、每週四可承接，顯示最近的週四）。摺疊標題顯示「預定承接／已承接 m/d（・期滿轉換）」，沒有承接日時顯示承接登記到期日。
-  - 承接流程 `TK_FLOW`（依序）：求才登記、求才送審、無違反登記｜勞動部函、承接登記（提示：沒有工業局函時才需要）｜承接日確認、接續通報、接續聘僱、接續居留展延。流程中的「勞動部函」新增時會寫入 `doc_type='tkmol'`。
+  - 承接案件：沒有進度軸。案件上方有「承接方式」`takeover_mode`：
+    - `two` 雙方合意：需要「終止聘僱許可函」；日期欄位＝承接日 `takeover_date`。
+    - `three` 三方合意：不需要終止聘僱許可函；日期欄位＝承接日。
+    - `expiry` 期滿轉換：外國人期滿隔日到新公司上班；日期欄位＝原雇主期滿日 `contract_end_date`、轉換合意日 `agree_date`；並顯示提示框（上班日＝期滿日+1、接續通報最晚日、居留效期約在期滿日前一天或當天屆滿，送通報時要一起送一站式居留證）。
+    - 舊欄位 `expiry_transfer=true` 且沒有 mode 時視為 expiry。
+    - 提示就服站時程（每週二回報確認單、每週四可承接，顯示最近的週四）。摺疊標題顯示「承接方式・期滿 m/d／預定承接／已承接 m/d」。
+  - 承接流程 `TK_FLOW`（依序）：求才登記、求才送審、無違反登記｜勞動部函、終止聘僱許可函（提示：雙方合意才需要；非雙方合意時勾選器預設不勾）、承接登記（提示：沒有工業局函時才需要）｜承接日確認、接續通報、接續聘僱、接續居留展延。流程中的「勞動部函」新增時寫入 `doc_type='tkmol'`。
   - 一般案件：沒有進度軸與流程。
   - 每種類型的流程定義在 `FLOWS`（`list`／`groups`／`idx` 排序函式），用 `flowOf(c)` 取得。
 - **入境案件的進度軸**：挑工 → 國外作業 → 送簽 → 領簽 → 入境。
@@ -118,9 +123,10 @@
 | `reentry` | 重入簽函（重招） | `/重入簽/` | 發文日 | **手動填寫**（規則待使用者提供） |
 | `takeover` | 承接登記 | `/承接登記/` | 登記日 | 登記日 **+59**（登記日當天算第 1 天，60 天內；欄位名「登記到期日」） |
 | `tkmol` | 勞動部函（承接） | `/承接函/`（承接流程新增時直接指定） | 發文日 | 無效期（隨時可承接） |
-| `tknotify` | 接續通報 | `/接續通報/` | 案件承接日 | 承接日 **+2**（承接日當天算第 1 天，共 3 日） |
-| `tkhire` | 接續聘僱 | `/接續聘僱/` | 案件承接日 | 承接日 **+14**（當天算第 1 天，共 15 日） |
-| `tkres` | 接續居留展延 | `/居留展延\|接續居留/` | 案件承接日 | 一般 **+14**（跟接續聘僱一起）；期滿轉換案件 **+2**（跟接續通報一起）。另有「外國人居留效期」欄位（存在 `expiry_date`），早於期限時標紅警告，並列入近期 |
+| `tknotify` | 接續通報 | `/接續通報/` | 承接日／轉換合意日 | 雙方、三方：承接日 **+2**（當天算第 1 天，3 日內）。期滿轉換：轉換合意日 +2，但**不晚於原雇主期滿日**（例：10/1 合意、10/2 期滿 → 10/2） |
+| `tkhire` | 接續聘僱 | `/接續聘僱/` | 承接日／轉換合意日 | **+14**（15 日內；例：10/1 合意 → 10/15） |
+| `tkres` | 接續居留展延 | `/居留展延\|接續居留/` | 承接日／轉換合意日 | 雙方、三方：跟接續聘僱一起 **+14**，留意居留效期。期滿轉換：跟接續通報同一天，且若「外國人居留效期」更早則以居留效期為期限。居留效期存在 `expiry_date`，早於期限時標紅，並列入近期 |
+| `tkend` | 終止聘僱許可函 | `/終止聘僱/` | 發文日 | 無效期（雙方合意才需要） |
 | `verify` | 驗證文件 | `/驗證/` | — | 無效期；有「DHL 寄國外日」欄位 |
 | `care` | 機場關懷 | `/機場關懷/` | 案件入境日 | 入境日 **−3 天** |
 | `pickup` | 接機安排 | `/接機/` | 案件入境日 | 入境日 **−3 天**（與機場關懷一起做） |
@@ -129,7 +135,7 @@
 | `permit` | 聘僱許可 | `/聘僱許可/` | 案件入境日 | 入境日 **+15** |
 | `arc` | 初次居留證 | `/初次居留/` | 案件入境日 | 入境日 **+30** |
 
-- **自動判斷順序**（`guessType`）：tknotify → tkhire → tkres → tkmol → takeover → reentry → notify → care → pickup → exam → permit → arc → entry → jc → nv → mol → verify（順序有意義，例如「重入簽」要先於「入簽」、「入國通報」不能被判成入簽函）。
+- **自動判斷順序**（`guessType`）：tknotify → tkhire → tkres → tkend → tkmol → takeover → reentry → notify → care → pickup → exam → permit → arc → entry → jc → nv → mol → verify（順序有意義，例如「重入簽」要先於「入簽」、「入國通報」不能被判成入簽函）。
 - `doc_type` 只在使用者選的類型與自動判斷不同時才寫入；null 代表用名稱判斷。
 - 「求才登記」「求才送審」「無違反法令申請」是申請流程，屬於 `general`，**沒有效期**。
 - **月份計算**（`termEnd`）：到期日為對應日當天（例：2026/9/17 起算 1 年 → 2027/9/17；9 個月 → 2027/6/17）；該月沒有對應日時取月底（5/31 + 9 個月 → 2/28）。
@@ -176,7 +182,10 @@
 | visa_get_date | date | 領簽日 |
 | arrival_date | date | 安排入境日 |
 | takeover_date | date | 承接日（承接案件） |
-| expiry_transfer | bool | 期滿轉換案件，預設 false |
+| expiry_transfer | bool | 舊欄位（v1.9），已由 takeover_mode 取代 |
+| takeover_mode | text | 承接方式 two／three／expiry |
+| contract_end_date | date | 原雇主期滿日（期滿轉換） |
+| agree_date | date | 轉換合意日（期滿轉換） |
 | progress_log | jsonb | 國外進度追蹤 `[{id,d,t}]`，預設 `[]` |
 
 ### capture_case_subtasks（子任務）
@@ -222,7 +231,10 @@ alter table capture_cases
   add column if not exists visa_get_date date,
   add column if not exists progress_log jsonb not null default '[]',
   add column if not exists takeover_date date,
-  add column if not exists expiry_transfer boolean not null default false;
+  add column if not exists expiry_transfer boolean not null default false,
+  add column if not exists takeover_mode text,
+  add column if not exists contract_end_date date,
+  add column if not exists agree_date date;
 
 -- 正在做（跨裝置同步）
 create table if not exists capture_focus (
