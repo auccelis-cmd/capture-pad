@@ -5,7 +5,7 @@
 > 2. 把 `sw.js` 的 `CACHE` 版本號 +1，並更新頁尾版本號；
 > 3. 若需要新欄位，提供可重複執行的 SQL（`add column if not exists`），並在最後加 `notify pgrst, 'reload schema';`。
 >
-> 目前版本：**v1.8**（`sw.js` 的 CACHE = `capture-pad-v180`）
+> 目前版本：**v1.9.2**（`sw.js` 的 CACHE = `capture-pad-v192`）
 
 ---
 
@@ -58,7 +58,8 @@
 - 案件卡可摺疊（展開狀態存 localStorage）。
 - **案件類型**：`entry` 入境案件（預設，`case_type` 為 null 也視為入境）／`takeover` 承接案件／`general` 一般案件。
   - 入境案件：有進度軸、國外進度追蹤、15 項流程勾選器。
-  - 承接案件（v1.8）：沒有進度軸；有自己的流程清單 `TK_FLOW`（目前只有「承接登記」，待使用者補齊）；摺疊標題顯示「登記到期 m/d」（14 天內琥珀、過期紅）。
+  - 承接案件：沒有進度軸；案件上方有「承接日」`takeover_date` 與「期滿轉換案件」勾選 `expiry_transfer`，並提示就服站時程（每週二回報確認單、每週四可承接，顯示最近的週四）。摺疊標題顯示「預定承接／已承接 m/d（・期滿轉換）」，沒有承接日時顯示承接登記到期日。
+  - 承接流程 `TK_FLOW`（依序）：求才登記、求才送審、無違反登記｜勞動部函、承接登記（提示：沒有工業局函時才需要）｜承接日確認、接續通報、接續聘僱、接續居留展延。流程中的「勞動部函」新增時會寫入 `doc_type='tkmol'`。
   - 一般案件：沒有進度軸與流程。
   - 每種類型的流程定義在 `FLOWS`（`list`／`groups`／`idx` 排序函式），用 `flowOf(c)` 取得。
 - **入境案件的進度軸**：挑工 → 國外作業 → 送簽 → 領簽 → 入境。
@@ -115,7 +116,11 @@
 | `mol` | 勞動部函（初招） | `/勞動部函\|招募函/` | 發文日 | 發文日起 **1 年**（對應日當天） |
 | `entry` | 入簽函（初招） | `/入簽\|引進/` | 發文日 | 發文日起 **9 個月**（對應日當天） |
 | `reentry` | 重入簽函（重招） | `/重入簽/` | 發文日 | **手動填寫**（規則待使用者提供） |
-| `takeover` | 承接登記 | `/承接/` | 登記日 | 登記日 **+60 天**（欄位名「登記到期日」） |
+| `takeover` | 承接登記 | `/承接登記/` | 登記日 | 登記日 **+59**（登記日當天算第 1 天，60 天內；欄位名「登記到期日」） |
+| `tkmol` | 勞動部函（承接） | `/承接函/`（承接流程新增時直接指定） | 發文日 | 無效期（隨時可承接） |
+| `tknotify` | 接續通報 | `/接續通報/` | 案件承接日 | 承接日 **+2**（承接日當天算第 1 天，共 3 日） |
+| `tkhire` | 接續聘僱 | `/接續聘僱/` | 案件承接日 | 承接日 **+14**（當天算第 1 天，共 15 日） |
+| `tkres` | 接續居留展延 | `/居留展延\|接續居留/` | 案件承接日 | 一般 **+14**（跟接續聘僱一起）；期滿轉換案件 **+2**（跟接續通報一起）。另有「外國人居留效期」欄位（存在 `expiry_date`），早於期限時標紅警告，並列入近期 |
 | `verify` | 驗證文件 | `/驗證/` | — | 無效期；有「DHL 寄國外日」欄位 |
 | `care` | 機場關懷 | `/機場關懷/` | 案件入境日 | 入境日 **−3 天** |
 | `pickup` | 接機安排 | `/接機/` | 案件入境日 | 入境日 **−3 天**（與機場關懷一起做） |
@@ -124,7 +129,7 @@
 | `permit` | 聘僱許可 | `/聘僱許可/` | 案件入境日 | 入境日 **+15** |
 | `arc` | 初次居留證 | `/初次居留/` | 案件入境日 | 入境日 **+30** |
 
-- **自動判斷順序**（`guessType`）：takeover → reentry → notify → care → pickup → exam → permit → arc → entry → jc → nv → mol → verify（順序有意義，例如「重入簽」要先於「入簽」、「入國通報」不能被判成入簽函）。
+- **自動判斷順序**（`guessType`）：tknotify → tkhire → tkres → tkmol → takeover → reentry → notify → care → pickup → exam → permit → arc → entry → jc → nv → mol → verify（順序有意義，例如「重入簽」要先於「入簽」、「入國通報」不能被判成入簽函）。
 - `doc_type` 只在使用者選的類型與自動判斷不同時才寫入；null 代表用名稱判斷。
 - 「求才登記」「求才送審」「無違反法令申請」是申請流程，屬於 `general`，**沒有效期**。
 - **月份計算**（`termEnd`）：到期日為對應日當天（例：2026/9/17 起算 1 年 → 2027/9/17；9 個月 → 2027/6/17）；該月沒有對應日時取月底（5/31 + 9 個月 → 2/28）。
@@ -132,7 +137,11 @@
 - **入境類期限**不存在子任務上，而是即時由 `cases.arrival_date` 計算（`dueOf`）；沒填入境日時顯示「填入境日後自動算期限」。
 - 「國外作業」提醒：挑工後超過 `ABROAD_ALERT = 30` 天仍未送簽就提醒；第 23 天起先出現在「七天內」。
 
-### 3.3 名稱容錯
+### 3.3 兩種「幾日內」的算法（使用者已確認）
+- **入境**：入境日「隔日」起算。例：9/21 入境，3 日內 = 9/22–9/24 → 期限 = 入境日 +3（15 日 → +15、30 日 → +30）。
+- **承接**：承接日「當天」起算。例：9/21 承接，3 日內 = 9/21–9/23 → 期限 = 承接日 +2（15 日 → +14）。
+
+### 3.4 名稱容錯
 `flowIdx` 會把「違法法令」視為「違反法令」，並依類型對應流程項目（例：「勞動部函申請」算「勞動部函」、「越辦驗證」算「驗證文件」），避免新增流程時重複。
 
 ---
@@ -166,6 +175,8 @@
 | visa_submit_date | date | 送簽日 |
 | visa_get_date | date | 領簽日 |
 | arrival_date | date | 安排入境日 |
+| takeover_date | date | 承接日（承接案件） |
+| expiry_transfer | bool | 期滿轉換案件，預設 false |
 | progress_log | jsonb | 國外進度追蹤 `[{id,d,t}]`，預設 `[]` |
 
 ### capture_case_subtasks（子任務）
@@ -209,7 +220,9 @@ alter table capture_cases
   add column if not exists pick_date date,
   add column if not exists visa_submit_date date,
   add column if not exists visa_get_date date,
-  add column if not exists progress_log jsonb not null default '[]';
+  add column if not exists progress_log jsonb not null default '[]',
+  add column if not exists takeover_date date,
+  add column if not exists expiry_transfer boolean not null default false;
 
 -- 正在做（跨裝置同步）
 create table if not exists capture_focus (
@@ -276,7 +289,6 @@ notify pgrst, 'reload schema';
 - **重入簽函（重招）** 的效期規則尚未提供，目前手動填寫。
 - 「入境隔日起 3 天內」目前算成入境日 +3（例：10/5 入境 → 10/8），使用者尚未明確確認。
 - 「國外作業」提醒天數 `ABROAD_ALERT` 暫定 30 天，使用者試用後可能調整。
-- **承接案件的完整流程**尚未提供，`TK_FLOW` 目前只有「承接登記」。
 - 曾提議但尚未做：「已完成」歷史紀錄頁。
 
 ## 9. 修改時的注意事項
