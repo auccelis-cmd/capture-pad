@@ -16,7 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;
-  --bg:#141817;--surface:#1c211f;--raised:#232927;--line:#2f3633;--line-soft:#262c2a;
+  --bg:#141817;--surface:rgba(28,33,31,.9);--raised:#232927;--line:#2f3633;--line-soft:#262c2a;
   --ink:#e7e3d9;--muted:#9a9e96;--faint:#6f746d;
   --accent:#8fb5a1;--accent-ink:#10201a;--accent-soft:rgba(143,181,161,.13);
   --danger:#d99a8e;--danger-soft:rgba(217,154,142,.12);--warn:#d8b06a;
@@ -25,7 +25,8 @@
   --sans:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:hidden}
+html{background:var(--bg)}
+body{background:transparent;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:hidden}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -33,7 +34,7 @@ button{cursor:pointer}
 .hidden{display:none!important}
 
 /* 正在做：整個頁面唯一的重點 */
-.focusBar{position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg) 76%,rgba(20,24,23,0));padding:calc(14px + env(safe-area-inset-top)) 22px 12px}
+.focusBar{position:sticky;top:0;z-index:20;background:linear-gradient(rgba(20,24,23,.9) 72%,rgba(20,24,23,0));padding:calc(14px + env(safe-area-inset-top)) 22px 12px}
 .focusCard{max-width:1500px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:var(--radius);padding:11px 12px 11px 16px;display:flex;gap:14px;align-items:center}
 .focusCard.on{border-left-color:var(--accent)}
 .focusDot{display:none}
@@ -141,6 +142,7 @@ select:focus{border-color:var(--accent)}
 .subform:empty{display:none}
 .stageTag{font-size:11.5px;color:var(--muted);white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
 .stageTag.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.stageTag.late{color:var(--danger);border-color:rgba(217,154,142,.4)}
 .stageTag.accent{color:var(--accent);border-color:rgba(143,181,161,.4)}
 .stepper{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0 14px}
 .step{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
@@ -247,10 +249,26 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   .ctype,.caseOpts select{font-size:16px}
 }
 @media(min-width:981px){input,textarea,select{font-size:14px}.caseDates input{font-size:13px;padding:8px 7px}.capture input{font-size:15px}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* 動態背景 */
+.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.orb{position:absolute;border-radius:50%;opacity:0;transition:opacity 1.2s ease;will-change:transform}
+.o1{width:60vmax;height:60vmax;left:-18vmax;top:-24vmax;background:radial-gradient(circle,rgba(143,181,161,.55) 0%,rgba(143,181,161,0) 62%);animation:drift1 46s ease-in-out infinite alternate}
+.o2{width:52vmax;height:52vmax;right:-20vmax;top:28vh;background:radial-gradient(circle,rgba(63,122,112,.7) 0%,rgba(63,122,112,0) 62%);animation:drift2 64s ease-in-out infinite alternate}
+.o3{width:44vmax;height:44vmax;left:22vw;bottom:-26vmax;background:radial-gradient(circle,rgba(216,176,106,.45) 0%,rgba(216,176,106,0) 62%);animation:drift3 78s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(20vw,16vh) scale(1.18)}}
+@keyframes drift2{to{transform:translate(-24vw,-20vh) scale(.88)}}
+@keyframes drift3{to{transform:translate(-16vw,-14vh) scale(1.22)}}
+body[data-bg="mist"] .o1{opacity:.42}body[data-bg="mist"] .o2{opacity:.5}body[data-bg="mist"] .o3{opacity:.22}
+body[data-bg="stars"] .o1{opacity:.14}body[data-bg="stars"] .o2{opacity:.18}body[data-bg="stars"] .o3{opacity:.06}
+#bgStars{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
+body[data-bg="stars"] #bgStars{opacity:1}
+.bgPick{display:inline-flex;align-items:center;gap:4px;margin-left:6px}
+.bgPick select{width:auto;padding:2px 6px;font-size:12px;border-radius:6px;background:transparent;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}.orb{animation:none}}
 </style>
 </head>
-<body class="locked" data-tab="general">
+<body class="locked" data-tab="general" data-bg="mist">
+<div class="bgfx" aria-hidden="true"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span><canvas id="bgStars"></canvas></div>
 
 <!-- 登入／連接 -->
 <div id="gate" class="gate">
@@ -326,7 +344,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
     <form class="card" id="caseForm">
       <div class="label">新增案件</div>
       <div class="caseForm"><input id="caseName" autocomplete="off" placeholder="例如：苗林新案"><button class="btn">新增</button></div>
-      <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="general">一般案件</option></select>
+      <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="takeover">承接案件</option><option value="general">一般案件</option></select>
       <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 建立後選擇流程項目</label></div>
     </form>
     <div id="caseList"></div>
@@ -342,7 +360,8 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.6.1</div>
+  <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
+  <div>Capture Pad v1.8</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -352,7 +371,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
 </nav>
 
 <script>
-const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus'};
+const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus',bg:'capturePad.bg'};
 const $=s=>document.querySelector(s);
 const store={get(k,d=''){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{(v===''||v==null)?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
 let client=null,user=null,channel=null,items=[],cases=[],subs={};
@@ -403,11 +422,23 @@ function guessType(name){for(const k of ['takeover','reentry','notify','care','p
 const FLOW_BY_TYPE={jc:'求才證明書',nv:'無違反證明書',mol:'勞動部函',entry:'入簽函',reentry:'入簽函',verify:'驗證文件',care:'機場關懷',pickup:'接機安排',notify:'入國通報',exam:'入境體檢',arc:'初次居留證',permit:'聘僱許可'};
 const FLOW_GROUPS=[['申請階段',[0,1,2,3,4,5,6]],['國外作業',[7]],['入境',[8,9,10,11,12,13,14]]];
 let pickOpen=new Set();
+// 承接案件流程（之後依實務補齊）
+const TK_FLOW=['承接登記'];
+const CASE_TYPES=[['entry','入境案件'],['takeover','承接案件'],['general','一般案件']];
+const caseType=c=>['takeover','general'].includes(c.case_type)?c.case_type:'entry';
+const FLOWS={
+  entry:{list:FLOW,groups:FLOW_GROUPS,idx:x=>flowIdx(x)},
+  takeover:{list:TK_FLOW,groups:[['承接流程',TK_FLOW.map((_,i)=>i)]],idx:x=>{
+    const n=(x.content||'').trim();let i=TK_FLOW.indexOf(n);if(i>=0)return i;
+    if(typeOf(x)==='takeover')return TK_FLOW.indexOf('承接登記');
+    i=TK_FLOW.findIndex(f=>n.includes(f));return i>=0?i:999}}
+};
+const flowOf=c=>FLOWS[caseType(c)]||null;
 function pickerHTML(c){
-  const have=new Set((subs[c.id]||[]).map(flowIdx));
-  const groups=FLOW_GROUPS.map(([g,idx],gi)=>{
+  const F=flowOf(c),have=new Set((subs[c.id]||[]).map(F.idx));
+  const groups=F.groups.map(([g,idx],gi)=>{
     const avail=idx.filter(i=>!have.has(i)).length;
-    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':' checked'}>${FLOW[i]}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
+    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':' checked'}>${F.list[i]}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
     return `<div class="pickGroup"><label class="pickGTitle"><input type="checkbox" id="pg-${c.id}-${gi}" data-pickgroup="${c.id}" data-g="${gi}"${avail?' checked':' disabled'}>${g}</label><div class="pickItems">${items}</div></div>`;
   }).join('');
   return `<div class="picker" id="picker-${c.id}">
@@ -417,8 +448,8 @@ function pickerHTML(c){
   </div>`;
 }
 function syncPicker(cid){
-  const root=document.getElementById('picker-'+cid);if(!root)return;
-  FLOW_GROUPS.forEach((g,gi)=>{
+  const root=document.getElementById('picker-'+cid),c=cases.find(x=>x.id===cid);if(!root||!c)return;
+  flowOf(c).groups.forEach((g,gi)=>{
     const its=[...root.querySelectorAll(`input[data-pick][data-g="${gi}"]:not(:disabled)`)],gb=document.getElementById(`pg-${cid}-${gi}`);
     if(!gb||!its.length)return;const n=its.filter(x=>x.checked).length;
     gb.checked=n===its.length;gb.indeterminate=n>0&&n<its.length;
@@ -444,6 +475,12 @@ function stageOf(c){
   if(!c.visa_get_date)return{label:`送簽中・${Math.max(0,since(c.visa_submit_date))} 天`,cls:''};
   if(!c.arrival_date)return{label:'已領簽・待排入境',cls:'warn'};
   return dayDiff(c.arrival_date)>0?{label:`入境 ${md(c.arrival_date)}`,cls:'accent'}:{label:`已入境 ${md(c.arrival_date)}`,cls:''};
+}
+function takeoverStage(c){
+  const s=(subs[c.id]||[]).find(x=>typeOf(x)==='takeover'&&!x.is_completed&&x.expiry_date);
+  if(!s)return{label:'承接案件',cls:''};
+  const n=dayDiff(s.expiry_date);
+  return{label:n<0?`登記已過期 ${md(s.expiry_date)}`:`登記到期 ${md(s.expiry_date)}`,cls:n<0?'late':n<=14?'warn':'accent'};
 }
 function stepperHTML(c){
   const st=d=>!d?'todo':dayDiff(d)>0?'plan':'done';
@@ -668,7 +705,7 @@ function renderCases(){
   box.innerHTML=cases.length?cases.map(c=>{
     const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length,key='c-'+c.id;
     return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
-      <summary><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):''}<span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
+      <summary><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):caseType(c)==='takeover'?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(takeoverStage(c)):''}<span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
       <div class="caseBody">
         ${isEntry(c)?`${stepperHTML(c)}
         <div class="caseDates">${CASE_DATES.map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="cf-${f}-${c.id}" data-cfield="${f}" data-cid="${c.id}" type="date" value="${c[f]||''}"></div>`).join('')}</div>
@@ -695,7 +732,7 @@ function renderCases(){
           <div id="${key}-dates" class="subform"></div>
         </div>
         <div class="caseFoot">
-          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${isEntry(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">新增流程項目</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型"><option value="entry"${isEntry(c)?' selected':''}>入境案件</option><option value="general"${isEntry(c)?'':' selected'}>一般案件</option></select></span>
+          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${flowOf(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">新增流程項目</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型">${CASE_TYPES.map(([v,l])=>`<option value="${v}"${caseType(c)===v?' selected':''}>${l}</option>`).join('')}</select></span>
           <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
         </div>
       </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
@@ -765,7 +802,7 @@ async function loadCases(){
     const q=await client.from('capture_case_subtasks').select('*').in('case_id',list.map(c=>c.id)).order('created_at',{ascending:true});
     if(q.error)throw q.error;
     (q.data||[]).forEach(s=>(next[s.case_id]||(next[s.case_id]=[])).push(s));
-    Object.values(next).forEach(a=>a.sort((x,y)=>(flowIdx(x)-flowIdx(y))||String(x.created_at).localeCompare(String(y.created_at))));
+    list.forEach(c=>{const F=flowOf(c);if(F)next[c.id].sort((x,y)=>(F.idx(x)-F.idx(y))||String(x.created_at).localeCompare(String(y.created_at)))});
   }
   cases=list;subs=next;
 }
@@ -845,7 +882,7 @@ $('#caseForm').addEventListener('submit',async e=>{
   const type=$('#caseType').value,row={user_id:user.id,name};if(type!=='entry')row.case_type=type;
   const {data,error}=await client.from('capture_cases').insert(row).select().single();
   if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
-  if(type==='entry'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
+  if(type!=='general'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
 async function addLog(cid){
@@ -858,8 +895,9 @@ async function addLog(cid){
   refresh('cases');
 }
 async function insertFlow(cid,names){
-  const have=new Set((subs[cid]||[]).map(flowIdx));
-  const todo=FLOW.filter((n,i)=>!have.has(i)&&(!names||names.includes(n)));if(!todo.length)return 0;
+  const c=cases.find(x=>x.id===cid),F=c&&flowOf(c);if(!F)return 0;
+  const have=new Set((subs[cid]||[]).map(F.idx));
+  const todo=F.list.filter((n,i)=>!have.has(i)&&(!names||names.includes(n)));if(!todo.length)return 0;
   const base=Date.now();
   const rows=todo.map((content,i)=>({user_id:user.id,case_id:cid,content,created_at:new Date(base+i*1000).toISOString()}));
   return await run(client.from('capture_case_subtasks').insert(rows))?rows.length:-1;
@@ -937,7 +975,7 @@ document.addEventListener('click',async e=>{
     case 'pick-all':case 'pick-none':
       document.querySelectorAll(`#picker-${cid} input[data-pick]:not(:disabled)`).forEach(x=>x.checked=act==='pick-all');syncPicker(cid);break;
     case 'pick-add':{
-      const names=[...document.querySelectorAll(`#picker-${cid} input[data-pick]:checked:not(:disabled)`)].map(x=>FLOW[+x.dataset.i]);
+      const names=[...document.querySelectorAll(`#picker-${cid} input[data-pick]:checked:not(:disabled)`)].map(x=>flowOf(cs).list[+x.dataset.i]);
       if(!names.length)break;
       if(await insertFlow(cid,names)>0){pickOpen.delete(cid);refresh('cases')}
       break;}
@@ -977,7 +1015,7 @@ document.addEventListener('click',async e=>{
 $('#openList').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.save){e.preventDefault();saveItem(e.target.dataset.save)}
 });
-$('#caseType').addEventListener('change',e=>show('#caseTplWrap',e.target.value==='entry'));
+$('#caseType').addEventListener('change',e=>show('#caseTplWrap',e.target.value!=='general'));
 const caseList=$('#caseList');
 caseList.addEventListener('toggle',e=>{
   const d=e.target;if(!d.matches||!d.matches('details.caseCard'))return;
@@ -1020,6 +1058,41 @@ function setTab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   window.scrollTo({top:0});
 }
+
+/* ---------- 動態背景 ---------- */
+const Stars=(()=>{
+  const cv=document.getElementById('bgStars'),ctx=cv.getContext('2d');
+  const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w=0,h=0,dpr=1,dots=[],raf=0,last=0,on=false;
+  function size(){
+    dpr=Math.min(window.devicePixelRatio||1,2);w=cv.width=innerWidth*dpr;h=cv.height=innerHeight*dpr;
+    const n=Math.min(140,Math.round(innerWidth*innerHeight/11000));
+    dots=Array.from({length:n},()=>({x:Math.random()*w,y:Math.random()*h,r:(Math.random()*1.3+.35)*dpr,
+      v:(Math.random()*.22+.05)*dpr,dx:(Math.random()-.5)*.08*dpr,p:Math.random()*6.283,
+      c:Math.random()<.18?'216,176,106':(Math.random()<.5?'143,181,161':'231,227,217')}));
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    for(const d of dots){
+      if(!still){d.y-=d.v;d.x+=d.dx;if(d.y<-6){d.y=h+6;d.x=Math.random()*w}}
+      const a=.18+.32*(.5+.5*Math.sin(t/1600+d.p));
+      ctx.fillStyle=`rgba(${d.c},${a})`;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,6.283);ctx.fill();
+    }
+  }
+  function loop(t){if(!on)return;raf=requestAnimationFrame(loop);if(t-last<33)return;last=t;draw(t)}   // 約 30fps，省電
+  function start(){if(on)return;on=true;size();if(still)draw(0);else raf=requestAnimationFrame(loop)}
+  function stop(){on=false;cancelAnimationFrame(raf);ctx.clearRect(0,0,w,h)}
+  addEventListener('resize',()=>{if(on){size();if(still)draw(0)}});
+  document.addEventListener('visibilitychange',()=>{if(document.body.dataset.bg!=='stars')return;document.hidden?(on=false,cancelAnimationFrame(raf)):start()});
+  return{start,stop};
+})();
+function setBg(m){
+  if(!['mist','stars','off'].includes(m))m='mist';
+  document.body.dataset.bg=m;store.set(K.bg,m);$('#bgMode').value=m;
+  m==='stars'?Stars.start():Stars.stop();
+}
+$('#bgMode').addEventListener('change',e=>setBg(e.target.value));
+setBg(store.get(K.bg,'mist'));
 
 setTab(store.get(K.tab,'general'));
 renderFocus();
