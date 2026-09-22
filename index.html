@@ -169,6 +169,17 @@ select:focus{border-color:var(--accent)}
 .logRow .icon{width:26px;height:26px;font-size:13px}
 .footLeft{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
 .ctype{width:auto;padding:4px 8px;font-size:12px;border-radius:7px;color:var(--muted);background:transparent}
+.picker{margin:10px 0 4px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pickHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.pickGroup{padding:8px 0;border-top:1px solid var(--line)}
+.pickHead+.pickGroup{border-top:0}
+.pickGTitle{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;margin-bottom:6px}
+.pickItems{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 10px;padding-left:2px}
+.pickItem{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:5px 2px;cursor:pointer;border-radius:6px}
+.pickItem.had{color:var(--faint);cursor:default}
+.hadTag{font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.picker input[type=checkbox]{width:16px;height:16px;margin:0;flex:none;accent-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default;filter:none}
 .caseOpts{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
 .caseOpts select{width:auto;padding:6px 9px;font-size:13px}
 .caseOpts .tplCheck{margin-top:0}
@@ -316,7 +327,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
       <div class="label">新增案件</div>
       <div class="caseForm"><input id="caseName" autocomplete="off" placeholder="例如：苗林新案"><button class="btn">新增</button></div>
       <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="general">一般案件</option></select>
-      <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 自動建立完整流程（15 項）</label></div>
+      <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 建立後選擇流程項目</label></div>
     </form>
     <div id="caseList"></div>
   </section>
@@ -331,7 +342,7 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   <span class="who" id="who"></span>
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
-  <div>Capture Pad v1.6</div>
+  <div>Capture Pad v1.6.1</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -390,6 +401,31 @@ const TPL=[['求才證明書','jc'],['無違反證明書','nv'],['勞動部函',
 const FLOW=['求才登記','無違反法令申請','求才送審','無違反證明書','求才證明書','勞動部函','入簽函','驗證文件','機場關懷','接機安排','入國通報','入境體檢','初次居留證','聘僱許可','卡式居留證'];
 function guessType(name){for(const k of ['takeover','reentry','notify','care','pickup','exam','permit','arc','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
 const FLOW_BY_TYPE={jc:'求才證明書',nv:'無違反證明書',mol:'勞動部函',entry:'入簽函',reentry:'入簽函',verify:'驗證文件',care:'機場關懷',pickup:'接機安排',notify:'入國通報',exam:'入境體檢',arc:'初次居留證',permit:'聘僱許可'};
+const FLOW_GROUPS=[['申請階段',[0,1,2,3,4,5,6]],['國外作業',[7]],['入境',[8,9,10,11,12,13,14]]];
+let pickOpen=new Set();
+function pickerHTML(c){
+  const have=new Set((subs[c.id]||[]).map(flowIdx));
+  const groups=FLOW_GROUPS.map(([g,idx],gi)=>{
+    const avail=idx.filter(i=>!have.has(i)).length;
+    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':' checked'}>${FLOW[i]}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
+    return `<div class="pickGroup"><label class="pickGTitle"><input type="checkbox" id="pg-${c.id}-${gi}" data-pickgroup="${c.id}" data-g="${gi}"${avail?' checked':' disabled'}>${g}</label><div class="pickItems">${items}</div></div>`;
+  }).join('');
+  return `<div class="picker" id="picker-${c.id}">
+    <div class="pickHead"><span class="sectiontitle">選擇要新增的流程項目</span><span><button class="btn ghost" data-act="pick-all" data-cid="${c.id}">全選</button><button class="btn ghost" data-act="pick-none" data-cid="${c.id}">全不選</button></span></div>
+    ${groups}
+    <div class="caseFoot"><button class="btn ghost" data-act="case-flow" data-cid="${c.id}">取消</button><button class="btn" style="min-height:38px" id="pkn-${c.id}" data-act="pick-add" data-cid="${c.id}">新增</button></div>
+  </div>`;
+}
+function syncPicker(cid){
+  const root=document.getElementById('picker-'+cid);if(!root)return;
+  FLOW_GROUPS.forEach((g,gi)=>{
+    const its=[...root.querySelectorAll(`input[data-pick][data-g="${gi}"]:not(:disabled)`)],gb=document.getElementById(`pg-${cid}-${gi}`);
+    if(!gb||!its.length)return;const n=its.filter(x=>x.checked).length;
+    gb.checked=n===its.length;gb.indeterminate=n>0&&n<its.length;
+  });
+  const n=root.querySelectorAll('input[data-pick]:checked:not(:disabled)').length,btn=document.getElementById('pkn-'+cid);
+  btn.textContent=n?`新增 ${n} 項`:'新增';btn.disabled=!n;
+}
 function flowIdx(x){
   const n=(x.content||'').trim().replace('違法法令','違反法令');let i=FLOW.indexOf(n);if(i>=0)return i;
   const t=typeOf(x);if(FLOW_BY_TYPE[t])return FLOW.indexOf(FLOW_BY_TYPE[t]);
@@ -623,6 +659,7 @@ function renderCases(){
   const box=$('#caseList');
   // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
   const saved={};box.querySelectorAll('input[id],select[id],textarea[id$="-notes"]').forEach(el=>saved[el.id]=el.value);
+  const chk={};box.querySelectorAll('input[type=checkbox][id]').forEach(el=>chk[el.id]=el.checked);
   const manual={};box.querySelectorAll('select[data-manual]').forEach(el=>manual[el.id]=1);
   const act=document.activeElement,actId=box.contains(act)?act.id:null;
   const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
@@ -643,7 +680,8 @@ function renderCases(){
         <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
         <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
         <div class="label" style="margin-top:14px">子任務<span style="margin-left:6px">點名稱可編輯</span></div>
-        ${a.length?a.map(x=>subRowHTML(c,x)).join(''):'<div class="empty">還沒有子任務。</div>'}
+        ${a.length?a.map(x=>subRowHTML(c,x)).join(''):(pickOpen.has(c.id)?'':'<div class="empty">還沒有子任務。</div>')}
+        ${pickOpen.has(c.id)?pickerHTML(c):''}
         <div class="label" style="margin-top:16px">新增子任務</div>
         <div class="subform">
           <div class="chips"><span class="fieldCaption">常用</span>
@@ -657,7 +695,7 @@ function renderCases(){
           <div id="${key}-dates" class="subform"></div>
         </div>
         <div class="caseFoot">
-          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${isEntry(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">補上完整流程</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型"><option value="entry"${isEntry(c)?' selected':''}>入境案件</option><option value="general"${isEntry(c)?'':' selected'}>一般案件</option></select></span>
+          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${isEntry(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">新增流程項目</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型"><option value="entry"${isEntry(c)?' selected':''}>入境案件</option><option value="general"${isEntry(c)?'':' selected'}>一般案件</option></select></span>
           <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
         </div>
       </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
@@ -668,7 +706,9 @@ function renderCases(){
     if(manual[s.id])s.dataset.manual='1';
     rebuildDates(s.dataset.key,saved);
   });
-  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&el.tagName!=='SELECT')el.value=v});
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&el.tagName!=='SELECT'&&el.type!=='checkbox')el.value=v});
+  Object.entries(chk).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&!el.disabled)el.checked=v});
+  pickOpen.forEach(syncPicker);
   if(actId){const el=document.getElementById(actId);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
   return cases.length;
 }
@@ -805,7 +845,7 @@ $('#caseForm').addEventListener('submit',async e=>{
   const type=$('#caseType').value,row={user_id:user.id,name};if(type!=='entry')row.case_type=type;
   const {data,error}=await client.from('capture_cases').insert(row).select().single();
   if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
-  if(type==='entry'&&$('#caseTpl').checked&&data){await insertFlow(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
+  if(type==='entry'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
 async function addLog(cid){
@@ -817,9 +857,9 @@ async function addLog(cid){
   if(!await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid))){c.progress_log=prev;te.value=t;renderAll();return}
   refresh('cases');
 }
-async function insertFlow(cid){
+async function insertFlow(cid,names){
   const have=new Set((subs[cid]||[]).map(flowIdx));
-  const todo=FLOW.filter((n,i)=>!have.has(i));if(!todo.length)return 0;
+  const todo=FLOW.filter((n,i)=>!have.has(i)&&(!names||names.includes(n)));if(!todo.length)return 0;
   const base=Date.now();
   const rows=todo.map((content,i)=>({user_id:user.id,case_id:cid,content,created_at:new Date(base+i*1000).toISOString()}));
   return await run(client.from('capture_case_subtasks').insert(rows))?rows.length:-1;
@@ -891,9 +931,15 @@ document.addEventListener('click',async e=>{
       const log=(cs.progress_log||[]).filter(e=>e.id!==b.dataset.lid);cs.progress_log=log;renderAll();
       if(await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid)))refresh('cases');break;}
     case 'case-flow':{
-      const have=new Set((subs[cid]||[]).map(flowIdx)),todo=FLOW.filter((n,i)=>!have.has(i));
-      if(!todo.length){pill('流程已經完整','ok');break}
-      if(confirm(`要補上這 ${todo.length} 項嗎？\n\n${todo.join('、')}`)&&await insertFlow(cid)>0)refresh('cases');
+      pickOpen.has(cid)?pickOpen.delete(cid):pickOpen.add(cid);renderCases();
+      if(pickOpen.has(cid))document.getElementById('picker-'+cid)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+      break;}
+    case 'pick-all':case 'pick-none':
+      document.querySelectorAll(`#picker-${cid} input[data-pick]:not(:disabled)`).forEach(x=>x.checked=act==='pick-all');syncPicker(cid);break;
+    case 'pick-add':{
+      const names=[...document.querySelectorAll(`#picker-${cid} input[data-pick]:checked:not(:disabled)`)].map(x=>FLOW[+x.dataset.i]);
+      if(!names.length)break;
+      if(await insertFlow(cid,names)>0){pickOpen.delete(cid);refresh('cases')}
       break;}
     case 'item-edit':openItems.has(id)?openItems.delete(id):openItems.add(id);renderGeneral();
       if(openItems.has(id))document.getElementById('it-name-'+id)?.focus();break;
@@ -955,6 +1001,11 @@ caseList.addEventListener('change',async e=>{
     c.case_type=t.value;renderAll();
     if(await run(client.from('capture_cases').update({case_type:t.value}).eq('id',c.id)))refresh('cases');
   }
+});
+caseList.addEventListener('change',e=>{
+  const t=e.target;if(!t.dataset)return;
+  if(t.dataset.pickgroup){document.querySelectorAll(`#picker-${t.dataset.pickgroup} input[data-pick][data-g="${t.dataset.g}"]:not(:disabled)`).forEach(x=>x.checked=t.checked);syncPicker(t.dataset.pickgroup)}
+  else if(t.dataset.pick)syncPicker(t.dataset.pick);
 });
 caseList.addEventListener('input',onField);
 caseList.addEventListener('change',onField);
