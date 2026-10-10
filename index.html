@@ -112,7 +112,27 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .caseForm{display:flex;gap:8px}
 .caseCard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px}
 .caseCard[open]{border-color:#3b4440}
-.caseCard summary{list-style:none;display:flex;gap:10px;align-items:center;padding:12px 12px 12px 14px;cursor:pointer}
+.caseCard summary{list-style:none;display:flex;gap:8px;align-items:center;padding:12px 12px 12px 14px;cursor:pointer}
+.caseHead{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 7px}
+.caseHead .caseTitle{flex:1 1 150px;min-width:0}
+.caseHead .stageTag,.caseHead .nextTag,.caseHead .progress{flex:0 0 auto}
+.nextTag{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.nextTag.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.nextTag.late{color:var(--danger);border-color:rgba(217,154,142,.4)}
+.caseTools{display:flex;gap:8px;margin:0 2px 12px}
+.caseTools input{flex:1}
+.caseTools #sortBtn{min-height:38px}
+body.sorting #caseForm,body.sorting #caseSearch{display:none}
+.sortCard{padding:14px}
+.sortRow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line-soft);background:var(--surface)}
+.sortRow:last-of-type{border-bottom:0}
+.sortRow.dragging{opacity:.4}
+.sortRow.over{box-shadow:inset 0 2px 0 var(--accent)}
+.grip{color:var(--faint);cursor:grab;font-size:15px;padding:0 2px}
+.sortName{flex:1;min-width:0;font-family:var(--serif);font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon:disabled{opacity:.25}
+.upGroup.off .foldArrow{transform:rotate(-90deg)}
+.foldArrow{color:var(--faint);transition:transform .15s}
 .caseCard summary::-webkit-details-marker{display:none}
 .caseTitle{font-family:var(--serif);font-size:17.5px;font-weight:700;letter-spacing:.04em;flex:1;min-width:0;word-break:break-word}
 .progress{font-size:11.5px;color:var(--muted);background:var(--raised);padding:2px 8px;border-radius:999px}
@@ -202,7 +222,7 @@ select:focus{border-color:var(--accent)}
 .caseFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
 
 /* 近期 */
-.upGroup{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:14px 2px 7px}
+.upGroup{display:flex;width:100%;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:14px 2px 7px;background:transparent;border:0;padding:4px 0;text-align:left;font-family:inherit}
 .upGroup::after{content:"";flex:1;height:1px;background:var(--line)}
 .upGroup:first-child{margin-top:0}
 .upGroup.late{color:var(--danger)}
@@ -248,6 +268,8 @@ body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .foot
   .tabs .n.late{color:var(--danger);font-weight:700}
   .fieldRow{grid-template-columns:1fr}
   .subEdit{margin-left:0}
+  .caseHead .caseTitle{flex:1 1 100%}
+  .nextTag{max-width:100%}
   .caseDates{grid-template-columns:1fr 1fr}
   .logAdd{grid-template-columns:1fr auto}
   .logAdd input[type=date]{grid-column:1/-1;width:100%}
@@ -352,6 +374,10 @@ body[data-bg="stars"] #bgStars{opacity:1}
       <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="takeover">承接案件</option><option value="general">一般案件</option></select>
       <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 建立後選擇流程項目</label></div>
     </form>
+    <div class="caseTools" id="caseTools">
+      <input id="caseSearch" type="search" autocomplete="off" placeholder="搜尋案件…">
+      <button class="btn secondary" id="sortBtn" data-act="sort-toggle">調整順序</button>
+    </div>
     <div id="caseList"></div>
   </section>
 
@@ -366,7 +392,7 @@ body[data-bg="stars"] #bgStars{opacity:1}
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
   <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
-  <div>Capture Pad v2.0</div>
+  <div>Capture Pad v2.1</div>
 </footer>
 
 <nav class="tabs" aria-label="切換頁面">
@@ -376,7 +402,7 @@ body[data-bg="stars"] #bgStars{opacity:1}
 </nav>
 
 <script>
-const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus',bg:'capturePad.bg'};
+const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus',bg:'capturePad.bg',fold:'capturePad.upFold'};
 const $=s=>document.querySelector(s);
 const store={get(k,d=''){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{(v===''||v==null)?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
 let client=null,user=null,channel=null,items=[],cases=[],subs={};
@@ -435,7 +461,8 @@ const FLOW=['求才登記','無違反法令申請','求才送審','無違反證�
 function guessType(name){for(const k of ['tknotify','tkhire','tkres','tkend','tkmol','takeover','reentry','notify','care','pickup','exam','permit','arc','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
 const FLOW_BY_TYPE={jc:'求才證明書',nv:'無違反證明書',mol:'勞動部函',entry:'入簽函',reentry:'入簽函',verify:'驗證文件',care:'機場關懷',pickup:'接機安排',notify:'入國通報',exam:'入境體檢',arc:'初次居留證',permit:'聘僱許可'};
 const FLOW_GROUPS=[['申請階段',[0,1,2,3,4,5,6]],['國外作業',[7]],['入境',[8,9,10,11,12,13,14]]];
-let pickOpen=new Set();
+let upFold=new Set((()=>{try{return JSON.parse(store.get(K.fold,'["之後"]'))}catch{return['之後']}})());
+let pickOpen=new Set(),sortMode=false,caseQuery='',sortDirty=new Set();
 // 承接案件流程（之後依實務補齊）
 const TK_FLOW=['求才登記','求才送審','無違反登記','勞動部函','終止聘僱許可函','承接登記','承接日確認','接續通報','接續聘僱','接續居留展延'];
 const TK_DOC={'勞動部函':'tkmol'};   // 承接流程裡要指定類型的項目
@@ -491,6 +518,16 @@ function stageOf(c){
   if(!c.visa_get_date)return{label:`送簽中・${Math.max(0,since(c.visa_submit_date))} 天`,cls:''};
   if(!c.arrival_date)return{label:'已領簽・待排入境',cls:'warn'};
   return dayDiff(c.arrival_date)>0?{label:`入境 ${md(c.arrival_date)}`,cls:'accent'}:{label:`已入境 ${md(c.arrival_date)}`,cls:''};
+}
+function nextDue(c){
+  let best=null;
+  (subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{const d=dueOf(c,x);if(d&&(!best||d<best.d))best={d,t:x.content}});
+  return best;
+}
+function nextTagHTML(c){
+  const b=nextDue(c);if(!b)return '';
+  const n=dayDiff(b.d);
+  return `<span class="nextTag ${n<0?'late':n<=7?'warn':''}">${md(b.d)} ${esc(b.t)}</span>`;
 }
 function takeoverStage(c){
   const ml=tkModeLabel(c),pre=ml?ml+'・':'';
@@ -559,7 +596,7 @@ let openSubs=new Set(),openItems=new Set();
 function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
 async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
-  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date|sort_order/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
 /* ---------- 正在做 ---------- */
@@ -643,7 +680,7 @@ function renderGeneral(){
   const doneAll=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   const doneToday=doneAll.filter(x=>isToday(x.updated_at));
   $('#openCount').textContent=open.length?`${open.length} 件`:'';
-  const ol=$('#openList'),saved={};ol.querySelectorAll('input[id]').forEach(el=>saved[el.id]=el.value);
+  const ol=$('#openList'),saved={};ol.querySelectorAll('input[id],textarea[id]').forEach(el=>saved[el.id]=el.value);
   const actId=ol.contains(document.activeElement)?document.activeElement.id:null;
   ol.innerHTML=open.length?open.map(x=>{
     const late=x.planned_date&&dayDiff(x.planned_date)<0,bits=[];
@@ -653,13 +690,14 @@ function renderGeneral(){
     const f=inFocus('item',x.id);
     return `<div class="row${f?' isNow':''}">
       <button class="check" data-act="done" data-id="${x.id}" aria-label="完成"></button>
-      <div class="body clickable" data-act="item-edit" data-id="${x.id}" title="點擊修改內容與日期"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div></div>
+      <div class="body clickable" data-act="item-edit" data-id="${x.id}" title="點擊修改內容、說明與日期"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div>${x.notes&&!openItems.has(x.id)?`<div class="subNote">${esc(x.notes)}</div>`:''}</div>
       <div class="actions">
         <button class="icon${f?' on':''}" data-act="now" data-id="${x.id}" title="${f?'移出正在做':'加入正在做'}" aria-label="${f?'移出正在做':'加入正在做'}">▶</button>
         <button class="icon${x.is_pinned?' pin':''}" data-act="pin" data-id="${x.id}" title="釘選" aria-label="釘選">⌖</button>
         <button class="icon" data-act="del" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
       </div></div>`+(openItems.has(x.id)?`<div class="subEdit itemEdit">
         <div class="field"><span class="fieldCaption">內容</span><input id="it-name-${x.id}" data-save="${x.id}" enterkeyhint="done" value="${esc(x.content)}"></div>
+        <div class="field"><span class="fieldCaption">說明</span><textarea id="it-note-${x.id}" class="caseNote" placeholder="補充說明、聯絡人、要帶的東西…">${esc(x.notes||'')}</textarea></div>
         <div class="field"><span class="fieldCaption">預計日期</span>
           <div class="dateRow" style="margin-top:0"><input id="it-date-${x.id}" type="date" value="${x.planned_date||''}">
             <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="0">今天</button>
@@ -762,10 +800,21 @@ function renderCases(){
   const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
   if(actId&&act.tagName==='TEXTAREA')saved[actId]=act.value;
 
-  box.innerHTML=cases.length?cases.map(c=>{
+  if(sortMode){
+    box.innerHTML=`<div class="card sortCard"><div class="tiny" style="margin:0 0 10px">拖曳 ⠿ 或按 ↑ ↓ 調整順序，順序會自動儲存。</div>
+      ${cases.map((c,i)=>`<div class="sortRow" draggable="true" data-cid="${c.id}" data-i="${i}">
+        <span class="grip" aria-hidden="true">⠿</span><span class="sortName">${esc(c.name)}</span>
+        <button class="icon" data-act="sort-up" data-cid="${c.id}"${i?'':' disabled'} title="上移" aria-label="上移">↑</button>
+        <button class="icon" data-act="sort-down" data-cid="${c.id}"${i===cases.length-1?' disabled':''} title="下移" aria-label="下移">↓</button>
+      </div>`).join('')}
+      <div class="caseFoot"><span class="tiny" style="margin:0">${cases.length} 個案件</span><button class="btn" style="min-height:38px" data-act="sort-toggle">完成</button></div></div>`;
+    return cases.length;
+  }
+  const list=caseQuery?cases.filter(c=>c.name.toLowerCase().includes(caseQuery.toLowerCase())):cases;
+  box.innerHTML=list.length?list.map(c=>{
     const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length,key='c-'+c.id;
     return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
-      <summary><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):caseType(c)==='takeover'?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(takeoverStage(c)):''}<span class="progress">${a.length?`${d}/${a.length}`:''}</span><span class="chev">⌄</span></summary>
+      <summary><span class="caseHead"><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):caseType(c)==='takeover'?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(takeoverStage(c)):''}${nextTagHTML(c)}<span class="progress">${a.length?`${d}/${a.length}`:''}</span></span><span class="chev">⌄</span></summary>
       <div class="caseBody">
         ${caseType(c)==='takeover'?takeoverTopHTML(c):''}
         ${isEntry(c)?`${stepperHTML(c)}
@@ -796,7 +845,7 @@ function renderCases(){
           <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${flowOf(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">新增流程項目</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型">${CASE_TYPES.map(([v,l])=>`<option value="${v}"${caseType(c)===v?' selected':''}>${l}</option>`).join('')}</select></span>
           <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
         </div>
-      </div></details>`}).join(''):'<div class="card empty">還沒有案件。在上面輸入名稱就能新增。</div>';
+      </div></details>`}).join(''):`<div class="card empty">${caseQuery?`找不到符合「${esc(caseQuery)}」的案件。`:'還沒有案件。在上面輸入名稱就能新增。'}</div>`;
 
   // 還原：先還原類型，依類型重建日期欄位，再還原其他值
   box.querySelectorAll('select[data-role="type"]').forEach(s=>{
@@ -821,8 +870,8 @@ function renderUpcoming(){
     const T=TYPES[typeOf(x)];
     const due=dueOf(c,x);
     if(due&&based(T))u.push({...ref,d:due,t,m:`${T.label}期限・${ruleOf(T,c)}`});
-    if(T.res&&x.expiry_date)u.push({...ref,d:x.expiry_date,t,m:'外國人居留效期到期'});
     else if(due)u.push({...ref,d:due,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
+    if(T.res&&x.expiry_date)u.push({...ref,d:x.expiry_date,t,m:'外國人居留效期到期'});
     if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({...ref,d:x.dhl_date,t,m:'DHL 寄國外日'});
   }));
   cases.filter(c=>caseType(c)==='takeover').forEach(c=>{
@@ -841,7 +890,10 @@ function renderUpcoming(){
   let html='';
   groups.forEach(([name,f,cls])=>{
     const g=u.filter(x=>f(dayDiff(x.d)));if(!g.length)return;
-    html+=`<div class="upGroup ${cls}">${name}<span class="n">${g.length}</span></div>`+g.slice(0,40).map(x=>`<div class="upItem ${cls}">
+    const off=upFold.has(name);
+    html+=`<button class="upGroup ${cls}${off?' off':''}" data-act="up-fold" data-g="${name}">${name}<span class="n">${g.length}</span><span class="foldArrow">⌄</span></button>`;
+    if(off)return;
+    html+=g.slice(0,60).map(x=>`<div class="upItem ${cls}">
       <div class="upDate">${dueLabel(x.d)}</div>
       <div class="body"><div class="upTitle">${esc(x.t)}</div><div class="meta">${esc(x.m)}</div></div>
       ${x.k==='case'?'':`<button class="icon${inFocus(x.k,x.id)?' on':''}" data-act="up-now" data-k="${x.k}" data-id="${x.id}" data-cid="${x.cid||''}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button>`}</div>`).join('');
@@ -861,7 +913,7 @@ function renderAll(){
 /* ---------- 同步 ---------- */
 async function loadItems(){const {data,error}=await client.from('capture_items').select('*').order('created_at',{ascending:true});if(error)throw error;items=data||[]}
 async function loadCases(){
-  const r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('created_at',{ascending:false});
+  const r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false});
   if(r.error)throw r.error;
   const list=r.data||[],next={};list.forEach(c=>next[c.id]=[]);
   if(list.length){
@@ -946,11 +998,27 @@ $('#caseForm').addEventListener('submit',async e=>{
   const el=$('#caseName'),name=el.value.trim();if(!name){el.focus();return}
   el.value='';pill('同步中…');
   const type=$('#caseType').value,row={user_id:user.id,name};if(type!=='entry')row.case_type=type;
+  row.sort_order=Math.min(0,...cases.map(c=>c.sort_order).filter(v=>typeof v==='number'))-1;
   const {data,error}=await client.from('capture_cases').insert(row).select().single();
   if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
   if(type!=='general'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
+function moveCase(from,to){
+  if(to<0||to>=cases.length||from===to)return;
+  cases.splice(to,0,cases.splice(from,1)[0]);
+  cases.forEach((c,i)=>{if(c.sort_order!==i){c.sort_order=i;sortDirty.add(c.id)}});
+  renderCases();queueOrder();
+}
+let orderT;
+function queueOrder(){clearTimeout(orderT);orderT=setTimeout(flushOrder,700)}
+async function flushOrder(){
+  clearTimeout(orderT);
+  const ids=[...sortDirty];if(!ids.length||!client||!user)return;
+  sortDirty.clear();pill('同步中…');
+  const rs=await Promise.all(ids.map(id=>client.from('capture_cases').update({sort_order:cases.find(c=>c.id===id)?.sort_order??0}).eq('id',id)));
+  if(rs.some(r=>r.error)){console.error(rs.find(r=>r.error).error);pill('順序儲存失敗','bad')}else pill('● 已同步','ok');
+}
 async function addLog(cid){
   const c=cases.find(x=>x.id===cid),te=document.getElementById('log-t-'+cid);if(!c||!te)return;
   const t=te.value.trim();if(!t){te.focus();return}
@@ -974,7 +1042,9 @@ async function saveItem(id){
   const it=items.find(x=>x.id===id);if(!it)return;
   const content=document.getElementById('it-name-'+id).value.trim()||it.content;
   const planned_date=document.getElementById('it-date-'+id).value||null;
-  if(!await run(client.from('capture_items').update({content,planned_date}).eq('id',id)))return;
+  const patch={content,planned_date},notes=document.getElementById('it-note-'+id).value;
+  if(notes!==(it.notes||''))patch.notes=notes||null;
+  if(!await run(client.from('capture_items').update(patch).eq('id',id)))return;
   openItems.delete(id);refresh('items');
 }
 async function addSub(cid){
@@ -1029,6 +1099,13 @@ document.addEventListener('click',async e=>{
     case 'sub-del':
       if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
     case 'sub-add':addSub(cid);break;
+    case 'up-fold':{const g=b.dataset.g;upFold.has(g)?upFold.delete(g):upFold.add(g);store.set(K.fold,JSON.stringify([...upFold]));renderUpcoming();break;}
+    case 'sort-toggle':
+      if(sortMode){flushOrder();sortMode=false}else{sortMode=true;caseQuery='';$('#caseSearch').value=''}
+      document.body.classList.toggle('sorting',sortMode);$('#sortBtn').textContent=sortMode?'完成':'調整順序';renderCases();break;
+    case 'sort-up':case 'sort-down':{
+      const i=cases.findIndex(c=>c.id===cid);if(i<0)break;
+      moveCase(i,i+(act==='sort-up'?-1:1));break;}
     case 'log-add':addLog(cid);break;
     case 'log-del':{
       if(!cs||!confirm('刪除這筆追蹤紀錄？'))break;
@@ -1082,7 +1159,27 @@ $('#openList').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.save){e.preventDefault();saveItem(e.target.dataset.save)}
 });
 $('#caseType').addEventListener('change',e=>show('#caseTplWrap',e.target.value!=='general'));
+$('#caseSearch').addEventListener('input',e=>{caseQuery=e.target.value.trim();renderCases()});
 const caseList=$('#caseList');
+let dragId=null;
+caseList.addEventListener('dragstart',e=>{
+  const r=e.target.closest&&e.target.closest('.sortRow');if(!r)return;
+  dragId=r.dataset.cid;r.classList.add('dragging');e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',dragId)}catch{}
+});
+caseList.addEventListener('dragover',e=>{
+  if(!dragId)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  const r=e.target.closest&&e.target.closest('.sortRow');
+  caseList.querySelectorAll('.sortRow.over').forEach(x=>x.classList.remove('over'));
+  if(r&&r.dataset.cid!==dragId)r.classList.add('over');
+});
+caseList.addEventListener('drop',e=>{
+  if(!dragId)return;e.preventDefault();
+  const r=e.target.closest&&e.target.closest('.sortRow');
+  if(r&&r.dataset.cid!==dragId)moveCase(cases.findIndex(c=>c.id===dragId),+r.dataset.i);
+  dragId=null;
+});
+caseList.addEventListener('dragend',()=>{dragId=null;caseList.querySelectorAll('.dragging,.over').forEach(x=>x.classList.remove('dragging','over'))});
 caseList.addEventListener('toggle',e=>{
   const d=e.target;if(!d.matches||!d.matches('details.caseCard'))return;
   d.open?openCases.add(d.dataset.cid):openCases.delete(d.dataset.cid);

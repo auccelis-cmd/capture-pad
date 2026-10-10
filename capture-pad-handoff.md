@@ -5,7 +5,7 @@
 > 2. 把 `sw.js` 的 `CACHE` 版本號 +1，並更新頁尾版本號；
 > 3. 若需要新欄位，提供可重複執行的 SQL（`add column if not exists`），並在最後加 `notify pgrst, 'reload schema';`。
 >
-> 目前版本：**v2.0**（`sw.js` 的 CACHE = `capture-pad-v200`）
+> 目前版本：**v2.1**（`sw.js` 的 CACHE = `capture-pad-v210`）
 
 ---
 
@@ -50,12 +50,14 @@
 ### 一般（快速插單）
 - 輸入內容 + 預計日期（今天／明天／不指定）→ 記下。
 - 「尚未完成」排序：釘選 → 預計日期近 → 最近更新。
-- **點事項名稱**展開編輯區：可改內容與預計日期。
+- **點事項名稱**展開編輯區：可改內容、說明（`notes`）與預計日期。有說明時，收合狀態會在事項下方顯示兩行摘要。
 - 每筆有 ▶（正在做）、⌖（釘選）、×（刪除，會確認）。
 - 「今天完成」只列今天完成的；「清掉完成項」刪除所有已完成紀錄（會確認，並顯示較早完成的筆數）。
 
 ### 案件
-- 案件卡可摺疊（展開狀態存 localStorage）。
+- 案件卡可摺疊（展開狀態存 localStorage）。摺疊時的標題列顯示：案件名、階段標籤、**最近期限標籤**（該案件所有未完成子任務裡最早的期限，7 天內琥珀、逾期紅）、進度。
+- 案件欄上方有搜尋框（依名稱過濾）與「調整順序」按鈕。
+- **調整順序模式**：按鈕切換後，案件欄換成精簡清單，可拖曳 ⠿（桌機）或按 ↑ ↓（所有裝置）調整；順序寫入 `sort_order`（0 起算），變更後 700ms 防抖自動儲存，按「完成」會立刻寫入並退出。新案件的 `sort_order` 取現有最小值 −1，所以排在最前。`sort_order` 為 null 的舊案件排在有值的之後，再依 `created_at` 新到舊。
 - **案件類型**：`entry` 入境案件（預設，`case_type` 為 null 也視為入境）／`takeover` 承接案件／`general` 一般案件。
   - 入境案件：有進度軸、國外進度追蹤、15 項流程勾選器。
   - 承接案件：沒有進度軸。案件上方有「承接方式」`takeover_mode`：
@@ -163,6 +165,7 @@
 | user_id | uuid | 擁有者 |
 | content | text | 內容 |
 | planned_date | date | 預計日期 |
+| notes | text | 說明（v2.1） |
 | is_pinned | bool | 釘選 |
 | is_completed | bool | 完成 |
 | is_active | bool | 舊欄位，目前未使用 |
@@ -174,6 +177,7 @@
 | id | uuid | PK |
 | user_id | uuid | |
 | name | text | 案件名稱 |
+| sort_order | integer | 手動排序（v2.1），小的在前，null 排最後 |
 | notes | text | 案件備註 |
 | created_at | timestamptz | 案件依此倒序排列 |
 | case_type | text | `entry`／`general`；null 視為 entry |
@@ -234,7 +238,11 @@ alter table capture_cases
   add column if not exists expiry_transfer boolean not null default false,
   add column if not exists takeover_mode text,
   add column if not exists contract_end_date date,
-  add column if not exists agree_date date;
+  add column if not exists agree_date date,
+  add column if not exists sort_order integer;
+
+-- 一般事項說明（v2.1）
+alter table capture_items add column if not exists notes text;
 
 -- 正在做（跨裝置同步）
 create table if not exists capture_focus (
@@ -270,6 +278,7 @@ notify pgrst, 'reload schema';
 | `capturePad.openCases` | 展開中的案件 |
 | `capturePad.focus` | 正在做的本機備份 |
 | `capturePad.bg` | 背景模式 mist／stars／off |
+| `capturePad.upFold` | 近期收合中的分組 |
 | `capturePad.v01.items` / `capturePad.v01.now` / `capturePadPrevNow` | 舊版資料，啟動時自動遷移後清除 |
 
 ---
@@ -302,6 +311,8 @@ notify pgrst, 'reload schema';
 - 「入境隔日起 3 天內」目前算成入境日 +3（例：10/5 入境 → 10/8），使用者尚未明確確認。
 - 「國外作業」提醒天數 `ABROAD_ALERT` 暫定 30 天，使用者試用後可能調整。
 - 曾提議但尚未做：「已完成」歷史紀錄頁。
+- v2.1 修掉的 bug：`renderUpcoming` 裡 `else if(due)` 原本接在居留效期那行之後，造成依入境日計算期限的子任務（入國通報、入境體檢、聘僱許可等）在「近期」重複出現兩次。
+- 「近期」的四個分組（逾期／今天／七天內／之後）可點標題收合，狀態存 localStorage `capturePad.upFold`，預設收合「之後」；每組最多顯示 60 筆。
 
 ## 9. 修改時的注意事項
 
