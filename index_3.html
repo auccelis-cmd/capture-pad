@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141817">
+<title>插單 · Capture Pad</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="插單">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;
+  --bg:#141817;--surface:rgba(28,33,31,.9);--raised:#232927;--line:#2f3633;--line-soft:#262c2a;
+  --ink:#e7e3d9;--muted:#9a9e96;--faint:#6f746d;
+  --accent:#8fb5a1;--accent-ink:#10201a;--accent-soft:rgba(143,181,161,.13);
+  --danger:#d99a8e;--danger-soft:rgba(217,154,142,.12);--warn:#d8b06a;
+  --radius:14px;
+  --serif:"LXGW WenKai TC","Kaiti TC","DFKai-SB","BiauKai",serif;
+  --sans:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{background:var(--bg)}
+body{background:transparent;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:rgba(143,181,161,.3)}
+.hidden{display:none!important}
+
+/* 正在做：整個頁面唯一的重點 */
+.focusBar{position:sticky;top:0;z-index:20;background:linear-gradient(rgba(20,24,23,.9) 72%,rgba(20,24,23,0));padding:calc(14px + env(safe-area-inset-top)) 22px 12px}
+.focusCard{max-width:1500px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:var(--radius);padding:11px 12px 11px 16px;display:flex;gap:14px;align-items:center}
+.focusCard.on{border-left-color:var(--accent)}
+.focusDot{display:none}
+.focusMain{flex:1;min-width:0}
+.focusLabel{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.focusText{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.03em;margin-top:1px;word-break:break-word}
+.focusCount{margin-left:8px;color:var(--faint)}
+.focusPrimary{display:flex;align-items:center;gap:4px}
+.focusPrimary .focusText{flex:1;min-width:0}
+.focusEmpty{font-size:13.5px;color:var(--faint);padding:2px 0}
+.fActs{display:flex;flex:none}
+.focusChips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.focusChips:empty{display:none}
+.fchip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--raised);max-width:100%;flex:none}
+.fchipText{border:0;background:transparent;padding:4px 2px 4px 11px;font-family:var(--serif);font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.fchipText:hover{color:var(--accent)}
+.fchipBtn{border:0;background:transparent;color:var(--faint);width:24px;height:24px;border-radius:50%;font-size:12px;padding:0;flex:none}
+.fchipBtn:hover{color:var(--ink);background:var(--line)}
+.icon.on{color:var(--accent);background:var(--accent-soft)}
+.focusSide{display:flex;gap:8px;align-items:center;flex:none}
+.pill{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--accent)}
+.pill.bad{color:var(--danger);border-color:rgba(217,154,142,.4);background:var(--danger-soft)}
+
+/* 三欄 */
+.workspace{max-width:1500px;margin:4px auto 0;padding:0 22px 20px;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr) minmax(280px,.9fr);gap:16px;align-items:start}
+.col{min-width:0}
+.colHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 2px 10px}
+.colHead h2{margin:0;font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:.1em}
+.colHint{font-size:11px;color:var(--faint)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:0 0 12px}
+.label{font-size:12px;color:var(--muted);margin-bottom:8px}
+.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
+.sectiontitle{font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.04em}
+.count{font-size:12px;color:var(--faint)}
+input,textarea{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:9px 10px;font-size:16px;outline:none;min-width:0;width:100%;transition:border-color .15s}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+input:focus,textarea:focus{border-color:var(--accent)}
+.capture{display:flex;gap:8px}
+.capture input{flex:1;padding:11px 12px;border-radius:10px}
+.dateRow{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.dateRow label{font-size:12px;color:var(--muted);margin-right:2px}
+.dateRow input{width:auto;padding:5px 9px;font-size:13.5px}
+.btn{border:0;border-radius:9px;padding:0 16px;min-height:42px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;white-space:nowrap;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:500;font-size:12.5px;min-height:30px;padding:0 10px;border-radius:8px}
+.btn.secondary:hover{border-color:var(--accent);color:var(--accent);filter:none}
+.btn.danger{background:transparent;border:1px solid rgba(217,154,142,.35);color:var(--danger);font-weight:500;font-size:12.5px;min-height:30px;padding:0 10px;border-radius:8px}
+.btn.danger:hover{background:var(--danger-soft);filter:none}
+.btn.ghost{background:transparent;color:var(--muted);font-size:12px;min-height:28px;padding:0 8px;font-weight:600}
+.btn.ghost:hover{color:var(--ink);filter:none}
+.tiny{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
+.tiny:empty{display:none}
+.empty{color:var(--faint);font-size:13px;padding:6px 0}
+.row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--line-soft)}
+.row:first-child{border-top:0}
+.check{width:20px;height:20px;border:1.5px solid #59605c;border-radius:50%;background:transparent;flex:none;margin-top:1px;padding:0;transition:border-color .15s}
+.check:hover{border-color:var(--accent)}
+.check.on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface)}
+.body{flex:1;min-width:0}
+.text{font-size:14.5px;line-height:1.45;word-break:break-word}
+.meta{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.due{color:var(--accent);font-weight:600}
+.due.late{color:var(--danger)}
+.due.soon{color:var(--warn)}
+.actions{display:flex;flex:none}
+.icon{border:0;background:transparent;color:var(--faint);font-size:14px;width:30px;height:30px;border-radius:7px;padding:0}
+.icon:hover{background:var(--raised);color:var(--ink)}
+.icon.pin{color:var(--accent)}
+.done .text{text-decoration:line-through;color:var(--faint)}
+.isNow .text{color:var(--accent);font-weight:700}
+
+/* 案件 */
+.caseForm{display:flex;gap:8px}
+.caseCard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px}
+.caseCard[open]{border-color:#3b4440}
+.caseCard summary{list-style:none;display:flex;gap:8px;align-items:center;padding:12px 12px 12px 14px;cursor:pointer}
+.caseHead{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 7px}
+.caseHead .caseTitle{flex:1 1 150px;min-width:0}
+.caseHead .stageTag,.caseHead .nextTag,.caseHead .progress{flex:0 0 auto}
+.nextTag{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.nextTag.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.nextTag.late{color:var(--danger);border-color:rgba(217,154,142,.4)}
+.caseTools{display:flex;gap:8px;margin:0 2px 12px}
+.caseTools input{flex:1}
+.caseTools #sortBtn{min-height:38px}
+body.sorting #caseForm,body.sorting #caseSearch{display:none}
+.sortCard{padding:14px}
+.sortRow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line-soft);background:var(--surface)}
+.sortRow:last-of-type{border-bottom:0}
+.sortRow.dragging{opacity:.4}
+.sortRow.over{box-shadow:inset 0 2px 0 var(--accent)}
+.grip{color:var(--faint);cursor:grab;font-size:15px;padding:0 2px}
+.sortName{flex:1;min-width:0;font-family:var(--serif);font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon:disabled{opacity:.25}
+.upGroup.off .foldArrow{transform:rotate(-90deg)}
+.foldArrow{color:var(--faint);transition:transform .15s}
+.caseCard summary::-webkit-details-marker{display:none}
+.caseTitle{font-family:var(--serif);font-size:17.5px;font-weight:700;letter-spacing:.04em;flex:1;min-width:0;word-break:break-word}
+.progress{font-size:11.5px;color:var(--muted);background:var(--raised);padding:2px 8px;border-radius:999px}
+.progress:empty{display:none}
+.chev{color:var(--faint);transition:transform .15s}
+.caseCard[open] .chev{transform:rotate(180deg)}
+.caseBody{border-top:1px solid var(--line);padding:12px 14px 14px}
+.caseNote{min-height:64px;resize:vertical;line-height:1.55;font-size:14px}
+.subRow{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line-soft)}
+.subRow .text{font-weight:600}
+.subform{display:grid;gap:9px}
+.field{display:grid;gap:5px;min-width:0}
+.fieldCaption{font-size:11px;color:var(--muted);font-weight:600}
+.fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.clickable{cursor:pointer;border-radius:8px}
+.clickable:hover .text{color:var(--accent)}
+.subNote{font-size:12px;color:#bcb7ac;margin-top:5px;padding-left:8px;border-left:2px solid var(--line);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.subRow.editing{border-bottom:0}
+.subEdit{display:grid;gap:9px;background:var(--raised);border:1px solid var(--line);border-radius:11px;padding:12px;margin:0 0 10px 30px}
+.subEdit input,.subEdit textarea{background:var(--surface)}
+.subEdit .caseFoot{margin-top:2px}
+.itemEdit{margin-top:2px}
+.ruleHint{font-weight:500;color:var(--accent);margin-left:6px}
+select{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:9px 10px;font-size:16px;width:100%;min-width:0;outline:none}
+select:focus{border-color:var(--accent)}
+.subEdit select{background:var(--surface)}
+.subform:empty{display:none}
+.stageTag{font-size:11.5px;color:var(--muted);white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.stageTag.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.stageTag.late{color:var(--danger);border-color:rgba(217,154,142,.4)}
+.stageTag.accent{color:var(--accent);border-color:rgba(143,181,161,.4)}
+.stepper{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0 14px}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.step::before{content:"";position:absolute;top:6px;right:50%;width:100%;height:2px;background:var(--line)}
+.step:first-child::before{display:none}
+.step.done::before,.step.active::before,.step.plan::before{background:var(--accent)}
+.step.plan::before{opacity:.45}
+.sdot{position:relative;z-index:1;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--line)}
+.step.done .sdot{background:var(--accent);border-color:var(--accent)}
+.step.plan .sdot{border-color:var(--accent);border-style:dashed}
+.step.active .sdot{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.step.alert .sdot{border-color:var(--warn);box-shadow:0 0 0 4px rgba(216,176,106,.15)}
+.slabel{font-size:12px;font-weight:600;color:var(--muted)}
+.step.done .slabel,.step.active .slabel{color:var(--ink)}
+.sdate{font-family:var(--serif);font-size:12.5px;font-weight:700;color:var(--faint)}
+.step.done .sdate,.step.active .sdate{color:var(--accent)}
+.step.alert .sdate{color:var(--warn)}
+.caseDates{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.logAdd{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center}
+.logAdd input[type=date]{width:auto;padding:7px 8px;font-size:13.5px}
+.logAdd input{padding:8px 10px}
+.logList{margin-top:6px}
+.logRow{display:flex;align-items:flex-start;gap:10px;padding:6px 0 6px 2px;border-bottom:1px dashed var(--line-soft)}
+.logDate{font-family:var(--serif);font-weight:700;font-size:13px;color:var(--accent);min-width:42px;padding-top:1px}
+.logText{flex:1;min-width:0;font-size:13.5px;word-break:break-word;padding-top:2px}
+.logRow .icon{width:26px;height:26px;font-size:13px}
+.footLeft{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.ctype{width:auto;padding:4px 8px;font-size:12px;border-radius:7px;color:var(--muted);background:transparent}
+.picker{margin:10px 0 4px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pickHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.pickGroup{padding:8px 0;border-top:1px solid var(--line)}
+.pickHead+.pickGroup{border-top:0}
+.pickGTitle{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;margin-bottom:6px}
+.pickItems{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 10px;padding-left:2px}
+.pickItem{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:5px 2px;cursor:pointer;border-radius:6px}
+.pickItem.had{color:var(--faint);cursor:default}
+.hadTag{white-space:nowrap;margin-left:2px;font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.picker input[type=checkbox]{width:16px;height:16px;margin:0;flex:none;accent-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default;filter:none}
+.pRow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.pRow.editing{border-bottom:0}
+.pRow .text{font-weight:700;font-size:15px}
+.pChips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.pChip{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.pChip.warn{color:var(--warn);border-color:rgba(216,176,106,.4)}
+.pChip.late{color:var(--danger);border-color:rgba(217,154,142,.4)}
+.pLinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.pLink{font-size:12px;color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+.pLink:hover{border-bottom-color:var(--accent)}
+.pDate3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.pAdd{display:flex;gap:8px;margin-top:12px}
+.pAdd input{flex:1}
+.pAdd .btn{min-height:40px}
+.tkTop{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.tkTop .field{width:180px}
+.tkInfo{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--ink);background:rgba(216,176,106,.08);border:1px solid rgba(216,176,106,.3);border-radius:9px;padding:8px 10px}
+.tkInfo b{color:var(--warn)}
+.tkCheck{margin:0 0 10px}
+.caseOpts{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.caseOpts select{width:auto;padding:6px 9px;font-size:13px}
+.caseOpts .tplCheck{margin-top:0}
+.tplCheck{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;color:var(--muted);cursor:pointer}
+.tplCheck input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:600;color:var(--accent);border:1px solid rgba(143,181,161,.35);border-radius:5px;padding:0 5px;vertical-align:2px;line-height:1.6}
+.expCap{display:flex;align-items:center;gap:2px}
+.plusBtn{margin-left:auto;border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:6px;font-size:11px;font-weight:600;padding:1px 7px;line-height:1.6}
+.plusBtn:hover{border-color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px dashed #48524d;background:transparent;border-radius:999px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.caseFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+
+/* 近期 */
+.upGroup{display:flex;width:100%;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:14px 2px 7px;background:transparent;border:0;padding:4px 0;text-align:left;font-family:inherit}
+.upGroup::after{content:"";flex:1;height:1px;background:var(--line)}
+.upGroup:first-child{margin-top:0}
+.upGroup.late{color:var(--danger)}
+.upGroup .n{font-weight:500;color:var(--faint)}
+.upItem{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 4px 9px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start}
+.upItem.late{border-color:rgba(217,154,142,.28)}
+.upDate{font-family:var(--serif);font-size:13.5px;font-weight:700;color:var(--accent);min-width:80px;flex:none;padding-top:2px}
+.upItem.late .upDate{color:var(--danger)}
+.upTitle{font-size:13.5px;font-weight:600;word-break:break-word}
+
+/* 登入 */
+.gate{max-width:440px;margin:0 auto;padding:calc(56px + env(safe-area-inset-top)) 16px 40px}
+.gateTitle{font-family:var(--serif);font-size:34px;font-weight:700;letter-spacing:.1em}
+.gateSub{color:var(--muted);font-size:13px;margin:4px 0 20px}
+.authgrid{display:grid;gap:9px;margin-top:10px}
+.status{font-size:12px;color:var(--muted)}
+body.locked .focusBar,body.locked .workspace,body.locked .tabs,body.locked .footer{display:none}
+
+.footer{text-align:center;font-size:11px;color:var(--faint);padding:6px 16px 30px}
+.footer .who{margin-right:4px}
+
+/* 手機：底部分頁 */
+.tabs{display:none}
+@media(max-width:980px){
+  .focusBar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+  .focusText{font-size:18px}
+  .focusCard{position:relative;padding-top:10px}
+  .focusSide{position:absolute;top:6px;right:8px;gap:4px}
+  .focusLabel{min-height:26px;display:flex;align-items:center;padding-right:150px}
+  .focusChips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-right:-12px;padding-right:12px}
+  .focusChips::-webkit-scrollbar{display:none}
+  .fchipText{max-width:200px}
+  .workspace{display:block;padding:0 14px 10px}
+  .col{display:none}
+  body[data-tab="general"] #col-general,
+  body[data-tab="cases"] #col-cases,
+  body[data-tab="upcoming"] #col-upcoming{display:block}
+  .footer{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .tabs{display:flex;position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:30;background:rgba(28,33,31,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:5px;gap:4px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+  .tabs button{flex:1;border:0;background:transparent;border-radius:11px;padding:11px 0;font-weight:600;font-size:14px;color:var(--muted)}
+  .tabs button.active{background:var(--accent-soft);color:var(--accent)}
+  .tabs .n{font-size:11px;margin-left:4px;font-weight:500}
+  .tabs .n.late{color:var(--danger);font-weight:700}
+  .fieldRow{grid-template-columns:1fr}
+  .subEdit{margin-left:0}
+  .caseHead .caseTitle{flex:1 1 100%}
+  .nextTag{max-width:100%}
+  .caseDates{grid-template-columns:1fr 1fr}
+  .pDate3{grid-template-columns:1fr 1fr}
+  .pAdd{flex-wrap:wrap}
+  .pAdd .btn{width:100%}
+  .logAdd{grid-template-columns:1fr auto}
+  .logAdd input[type=date]{grid-column:1/-1;width:100%}
+  .ctype,.caseOpts select{font-size:16px}
+}
+@media(min-width:981px){input,textarea,select{font-size:14px}.caseDates input{font-size:13px;padding:8px 7px}.capture input{font-size:15px}}
+/* 動態背景 */
+.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.orb{position:absolute;border-radius:50%;opacity:0;transition:opacity 1.2s ease;will-change:transform}
+.o1{width:60vmax;height:60vmax;left:-18vmax;top:-24vmax;background:radial-gradient(circle,rgba(143,181,161,.55) 0%,rgba(143,181,161,0) 62%);animation:drift1 46s ease-in-out infinite alternate}
+.o2{width:52vmax;height:52vmax;right:-20vmax;top:28vh;background:radial-gradient(circle,rgba(63,122,112,.7) 0%,rgba(63,122,112,0) 62%);animation:drift2 64s ease-in-out infinite alternate}
+.o3{width:44vmax;height:44vmax;left:22vw;bottom:-26vmax;background:radial-gradient(circle,rgba(216,176,106,.45) 0%,rgba(216,176,106,0) 62%);animation:drift3 78s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(20vw,16vh) scale(1.18)}}
+@keyframes drift2{to{transform:translate(-24vw,-20vh) scale(.88)}}
+@keyframes drift3{to{transform:translate(-16vw,-14vh) scale(1.22)}}
+body[data-bg="mist"] .o1{opacity:.42}body[data-bg="mist"] .o2{opacity:.5}body[data-bg="mist"] .o3{opacity:.22}
+body[data-bg="stars"] .o1{opacity:.14}body[data-bg="stars"] .o2{opacity:.18}body[data-bg="stars"] .o3{opacity:.06}
+#bgStars{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
+body[data-bg="stars"] #bgStars{opacity:1}
+.bgPick{display:inline-flex;align-items:center;gap:4px;margin-left:6px}
+.bgPick select{width:auto;padding:2px 6px;font-size:12px;border-radius:6px;background:transparent;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}.orb{animation:none}}
+</style>
+</head>
+<body class="locked" data-tab="general" data-bg="mist">
+<div class="bgfx" aria-hidden="true"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span><canvas id="bgStars"></canvas></div>
+
+<!-- 登入／連接 -->
+<div id="gate" class="gate">
+  <div class="gateTitle">插單</div>
+  <div class="gateSub">先記下來。不要現在處理。</div>
+  <form class="card hidden" id="connectCard">
+    <div class="sectiontitle">第一次連接</div>
+    <div class="tiny">只需要設定一次。Project URL 已先帶入；請貼上 Supabase 的 <b>Publishable key</b>。不要使用 Secret key。</div>
+    <div class="authgrid">
+      <input id="sbUrl" value="https://xdymhrblfpwrnertsbre.supabase.co">
+      <input id="sbKey" type="password" placeholder="sb_publishable_…">
+      <button class="btn">儲存連接設定</button>
+      <div id="connectStatus" class="status"></div>
+    </div>
+  </form>
+  <form class="card hidden" id="loginCard">
+    <div class="sectiontitle">登入</div>
+    <div class="tiny">使用妳在 Supabase Authentication 建立的 Email 與密碼。</div>
+    <div class="authgrid">
+      <input id="email" type="email" autocomplete="username" placeholder="Email">
+      <input id="password" type="password" autocomplete="current-password" placeholder="密碼">
+      <button class="btn">登入</button>
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </form>
+</div>
+
+<!-- 正在做（全域） -->
+<header class="focusBar">
+  <div class="focusCard" id="focusCard">
+    <div class="focusMain">
+      <div class="focusLabel">正在做<span class="focusCount" id="focusCount"></span></div>
+      <div class="focusPrimary" id="focusPrimary"></div>
+      <div class="focusChips" id="focusChips"></div>
+    </div>
+    <div class="focusSide">
+      <button class="btn ghost hidden" id="clearNow" data-act="clearNow">全部清空</button>
+      <span class="pill" id="cloudPill">未連接</span>
+    </div>
+  </div>
+</header>
+
+<div class="workspace">
+  <section id="col-general" class="col">
+    <div class="colHead"><h2>一般</h2><span class="colHint">先記下來，不要現在處理</span></div>
+    <form class="card" id="captureForm">
+      <div class="label">現在有什麼不能忘？</div>
+      <div class="capture">
+        <input id="captureInput" autocomplete="off" enterkeyhint="done" placeholder="例如：○○居留證申請">
+        <button class="btn">記下</button>
+      </div>
+      <div class="dateRow">
+        <label for="dueDate">預計日期</label>
+        <input id="dueDate" type="date">
+        <button type="button" class="btn secondary" data-act="date" data-off="0">今天</button>
+        <button type="button" class="btn secondary" data-act="date" data-off="1">明天</button>
+        <button type="button" class="btn secondary" data-act="date" data-off="">不指定</button>
+      </div>
+    </form>
+    <section class="card">
+      <div class="sectionhead"><div class="sectiontitle">尚未完成</div><span class="count" id="openCount"></span></div>
+      <div id="openList"></div>
+    </section>
+    <section class="card">
+      <div class="sectionhead"><div class="sectiontitle">今天完成</div><button class="btn danger hidden" id="clearDone" data-act="clearDone">清掉完成項</button></div>
+      <div id="doneList"></div>
+      <div class="tiny" id="doneNote"></div>
+    </section>
+  </section>
+
+  <section id="col-cases" class="col">
+    <div class="colHead"><h2>案件</h2><span class="colHint">長流程與子任務</span></div>
+    <form class="card" id="caseForm">
+      <div class="label">新增案件</div>
+      <div class="caseForm"><input id="caseName" autocomplete="off" placeholder="例如：苗林新案"><button class="btn">新增</button></div>
+      <div class="caseOpts"><select id="caseType" aria-label="案件類型"><option value="entry">入境案件</option><option value="takeover">承接案件</option><option value="general">一般案件</option></select>
+      <label class="tplCheck" id="caseTplWrap"><input type="checkbox" id="caseTpl" checked> 建立後選擇流程項目</label></div>
+    </form>
+    <div class="caseTools" id="caseTools">
+      <input id="caseSearch" type="search" autocomplete="off" placeholder="搜尋案件…">
+      <button class="btn secondary" id="sortBtn" data-act="sort-toggle">調整順序</button>
+    </div>
+    <div id="caseList"></div>
+  </section>
+
+  <section id="col-upcoming" class="col">
+    <div class="colHead"><h2>近期</h2><span class="colHint">只看有日期的事</span></div>
+    <div id="upcomingList"></div>
+  </section>
+</div>
+
+<footer class="footer">
+  <span class="who" id="who"></span>
+  <button class="btn ghost" data-act="logout">登出</button>
+  <button class="btn ghost" data-act="reset">重設連接</button>
+  <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
+  <div>Capture Pad v2.2</div>
+</footer>
+
+<nav class="tabs" aria-label="切換頁面">
+  <button data-act="tab" data-tab="general">一般<span class="n" id="n-general"></span></button>
+  <button data-act="tab" data-tab="cases">案件<span class="n" id="n-cases"></span></button>
+  <button data-act="tab" data-tab="upcoming">近期<span class="n" id="n-upcoming"></span></button>
+</nav>
+
+<script>
+const K={items:'capturePad.v01.items',now:'capturePad.v01.now',prev:'capturePadPrevNow',cfg:'capturePad.v04.connection',tab:'capturePad.tab',open:'capturePad.openCases',focus:'capturePad.focus',bg:'capturePad.bg',fold:'capturePad.upFold'};
+const $=s=>document.querySelector(s);
+const store={get(k,d=''){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{(v===''||v==null)?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
+let client=null,user=null,channel=null,items=[],cases=[],subs={};
+const MAXF=5;
+let focus=[],focusLocal=false,loaded={items:false,cases:false};
+let openCases=new Set((()=>{try{return JSON.parse(store.get(K.open,'[]'))}catch{return[]}})());
+
+/* ---------- 小工具 ---------- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const WD='日一二三四五六';
+const stamp=ts=>new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts));
+const parseD=d=>{const[y,m,day]=d.split('-').map(Number);return new Date(y,m-1,day)};
+const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+const todayISO=(off=0)=>{const d=new Date();d.setDate(d.getDate()+off);return iso(d)};
+const dayDiff=d=>{const n=new Date();return Math.round((parseD(d)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5)};
+const isToday=ts=>iso(new Date(ts))===todayISO();
+function dueLabel(d){if(!d)return'';const x=dayDiff(d),dt=parseD(d);if(x===0)return'今天';if(x===1)return'明天';if(x===2)return'後天';if(x===-1)return'昨天';return`${dt.getFullYear()!==new Date().getFullYear()?dt.getFullYear()+'/':''}${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）`}
+// ── 子任務類型：決定要填哪些日期、效期怎麼算（之後要加類型就加在這裡）
+const addDays=(d,n)=>{const dt=parseD(d);dt.setDate(dt.getDate()+n);return iso(dt)};
+// 「發文日起算 N 個月」：到期日為對應日當天（例：2026/9/17 +1 年 → 2027/9/17）；該月沒有對應日時為月底
+function termEnd(d,months){
+  const s=parseD(d),m=s.getMonth()+months,ty=s.getFullYear()+Math.floor(m/12),tm=((m%12)+12)%12,day=s.getDate();
+  const last=new Date(ty,tm+1,0).getDate();
+  return iso(new Date(ty,tm,Math.min(day,last)));
+}
+const TYPES={
+  general:{label:'一般（不需日期）'},
+  jc:{label:'求才證明書',short:'求才證明',from:'發文日',rule:'發文日起 90 天',calc:d=>addDays(d,90),match:/求才證明/},
+  nv:{label:'無違反證明書',short:'無違反證明',from:'發文日',rule:'發文日起 90 天',calc:d=>addDays(d,90),match:/無違[反法](法令)?證明/},
+  mol:{label:'勞動部函（初招）',short:'勞動部函',from:'發文日',rule:'發文日起 1 年',calc:d=>termEnd(d,12),match:/勞動部函|招募函/},
+  entry:{label:'入簽函（初招）',short:'入簽函',from:'發文日',rule:'發文日起 9 個月',calc:d=>termEnd(d,9),match:/入簽|引進/},
+  reentry:{label:'重入簽函（重招）',short:'重入簽',from:'發文日',rule:'手動填寫',match:/重入簽/},
+  takeover:{label:'承接登記',short:'承接登記',from:'登記日',expLabel:'登記到期日',rule:'登記日當天起算 60 天內',calc:d=>addDays(d,59),match:/承接登記/},
+  tkmol:{label:'勞動部函（承接）',short:'承接函',from:'發文日',noExp:true,rule:'隨時可以承接',match:/承接函/},
+  // 依「案件承接日」自動算期限
+  tknotify:{label:'接續通報',short:'通報',tk:1,tkDue:c=>tkNotifyDue(c),rule:c=>isExpiryTk(c)?'轉換合意日起 3 日內，且最晚在期滿日前送（要一起送一站式居留證）':'承接日當天起算 3 日內',match:/接續通報/},
+  tkhire:{label:'接續聘僱',short:'聘僱',tk:1,tkDue:c=>{const b=tkBase(c);return b?addDays(b,14):null},rule:c=>isExpiryTk(c)?'轉換合意日起 15 日內':'承接日當天起算 15 日內',match:/接續聘僱/},
+  tkres:{label:'接續居留展延',short:'居留展延',tk:1,res:true,tkDue:(c,x)=>{
+      if(!isExpiryTk(c)){const b=tkBase(c);return b?addDays(b,14):null}
+      const d=tkNotifyDue(c);return d&&x&&x.expiry_date&&x.expiry_date<d?x.expiry_date:d},
+    rule:c=>isExpiryTk(c)?'期滿轉換：跟接續通報一起送一站式居留證（居留效期會在期滿日前一天或當天屆滿）':'跟接續聘僱一起，承接日當天起算 15 日內；留意居留效期',match:/居留展延|接續居留/},
+  tkend:{label:'終止聘僱許可函',short:'終止函',from:'發文日',noExp:true,rule:'雙方合意才需要',match:/終止聘僱/},
+  verify:{label:'驗證文件',short:'驗證',dhl:true,match:/驗證/},
+  // 依「案件入境日」自動算期限
+  care:{label:'機場關懷',short:'入境前 3 天',arr:-3,rule:'入境三天前',match:/機場關懷/},
+  pickup:{label:'接機安排',short:'入境前 3 天',arr:-3,rule:'與機場關懷一起，入境三天前',match:/接機/},
+  notify:{label:'入國通報',short:'入境 +3',arr:3,rule:'入境隔日起 3 天內',match:/入國通報/},
+  exam:{label:'入境體檢',short:'入境 +3',arr:3,rule:'入境隔日起 3 天內',match:/體檢/},
+  permit:{label:'聘僱許可',short:'入境 +15',arr:15,rule:'入境隔日起 15 天內',match:/聘僱許可/},
+  arc:{label:'初次居留證',short:'入境 +30',arr:30,rule:'入境隔日起 30 天內',match:/初次居留/}
+};
+const TYPE_ORDER=['general','jc','nv','mol','entry','reentry','takeover','tkmol','tkend','tknotify','tkhire','tkres','verify','care','pickup','notify','exam','permit','arc'];
+const TPL=[['求才證明書','jc'],['無違反證明書','nv'],['勞動部函','mol'],['入簽函','entry'],['重入簽函','reentry'],['承接登記','takeover'],['驗證文件','verify']];
+// 完整案件流程（依序）
+const FLOW=['求才登記','無違反法令申請','求才送審','無違反證明書','求才證明書','勞動部函','入簽函','驗證文件','機場關懷','接機安排','入國通報','入境體檢','初次居留證','聘僱許可','卡式居留證'];
+function guessType(name){for(const k of ['tknotify','tkhire','tkres','tkend','tkmol','takeover','reentry','notify','care','pickup','exam','permit','arc','entry','jc','nv','mol','verify'])if(TYPES[k].match.test(name||''))return k;return 'general'}
+const FLOW_BY_TYPE={jc:'求才證明書',nv:'無違反證明書',mol:'勞動部函',entry:'入簽函',reentry:'入簽函',verify:'驗證文件',care:'機場關懷',pickup:'接機安排',notify:'入國通報',exam:'入境體檢',arc:'初次居留證',permit:'聘僱許可'};
+const FLOW_GROUPS=[['申請階段',[0,1,2,3,4,5,6]],['國外作業',[7]],['入境',[8,9,10,11,12,13,14]]];
+let upFold=new Set((()=>{try{return JSON.parse(store.get(K.fold,'["之後"]'))}catch{return['之後']}})());
+let pickOpen=new Set(),sortMode=false,caseQuery='',sortDirty=new Set();
+// 承接案件流程（之後依實務補齊）
+const TK_FLOW=['求才登記','求才送審','無違反登記','勞動部函','終止聘僱許可函','承接登記','承接日確認','接續通報','接續聘僱','接續居留展延'];
+const TK_DOC={'勞動部函':'tkmol'};   // 承接流程裡要指定類型的項目
+const TK_HINT={'承接登記':'沒有工業局函時才需要','終止聘僱許可函':'雙方合意才需要'};
+const CASE_TYPES=[['entry','入境案件'],['takeover','承接案件'],['general','一般案件']];
+const caseType=c=>['takeover','general'].includes(c.case_type)?c.case_type:'entry';
+const FLOWS={
+  entry:{list:FLOW,groups:FLOW_GROUPS,idx:x=>flowIdx(x)},
+  takeover:{list:TK_FLOW,groups:[['申請階段',[0,1,2]],['承接文件',[3,4,5]],['承接後',[6,7,8,9]]],doc:TK_DOC,hint:TK_HINT,off:(c,n)=>n==='終止聘僱許可函'&&tkMode(c)!=='two',idx:x=>{
+    const n=(x.content||'').trim();let i=TK_FLOW.indexOf(n);if(i>=0)return i;
+    const tm={takeover:'承接登記',tkmol:'勞動部函',mol:'勞動部函',tkend:'終止聘僱許可函',tknotify:'接續通報',tkhire:'接續聘僱',tkres:'接續居留展延'}[typeOf(x)];if(tm)return TK_FLOW.indexOf(tm);
+    i=TK_FLOW.findIndex(f=>n.includes(f));return i>=0?i:999}}
+};
+const flowOf=c=>FLOWS[caseType(c)]||null;
+function pickerHTML(c){
+  const F=flowOf(c),have=new Set((subs[c.id]||[]).map(F.idx));
+  const groups=F.groups.map(([g,idx],gi)=>{
+    const avail=idx.filter(i=>!have.has(i)).length;
+    const items=idx.map(i=>{const had=have.has(i);return `<label class="pickItem${had?' had':''}"><input type="checkbox" id="pk-${c.id}-${i}" data-pick="${c.id}" data-g="${gi}" data-i="${i}"${had?' disabled':(F.off&&F.off(c,F.list[i])?'':' checked')}>${F.list[i]}${F.hint&&F.hint[F.list[i]]&&!had?`<span class="hadTag">${F.hint[F.list[i]]}</span>`:''}${had?'<span class="hadTag">已有</span>':''}</label>`}).join('');
+    return `<div class="pickGroup"><label class="pickGTitle"><input type="checkbox" id="pg-${c.id}-${gi}" data-pickgroup="${c.id}" data-g="${gi}"${avail?' checked':' disabled'}>${g}</label><div class="pickItems">${items}</div></div>`;
+  }).join('');
+  return `<div class="picker" id="picker-${c.id}">
+    <div class="pickHead"><span class="sectiontitle">選擇要新增的流程項目</span><span><button class="btn ghost" data-act="pick-all" data-cid="${c.id}">全選</button><button class="btn ghost" data-act="pick-none" data-cid="${c.id}">全不選</button></span></div>
+    ${groups}
+    <div class="caseFoot"><button class="btn ghost" data-act="case-flow" data-cid="${c.id}">取消</button><button class="btn" style="min-height:38px" id="pkn-${c.id}" data-act="pick-add" data-cid="${c.id}">新增</button></div>
+  </div>`;
+}
+function syncPicker(cid){
+  const root=document.getElementById('picker-'+cid),c=cases.find(x=>x.id===cid);if(!root||!c)return;
+  flowOf(c).groups.forEach((g,gi)=>{
+    const its=[...root.querySelectorAll(`input[data-pick][data-g="${gi}"]:not(:disabled)`)],gb=document.getElementById(`pg-${cid}-${gi}`);
+    if(!gb||!its.length)return;const n=its.filter(x=>x.checked).length;
+    gb.checked=n===its.length;gb.indeterminate=n>0&&n<its.length;
+  });
+  const n=root.querySelectorAll('input[data-pick]:checked:not(:disabled)').length,btn=document.getElementById('pkn-'+cid);
+  btn.textContent=n?`新增 ${n} 項`:'新增';btn.disabled=!n;
+}
+function flowIdx(x){
+  const n=(x.content||'').trim().replace('違法法令','違反法令');let i=FLOW.indexOf(n);if(i>=0)return i;
+  const t=typeOf(x);if(FLOW_BY_TYPE[t])return FLOW.indexOf(FLOW_BY_TYPE[t]);
+  i=FLOW.findIndex(f=>n.includes(f));return i>=0?i:999;
+}
+// ── 入境案件進度
+const ABROAD_ALERT=30;   // 挑工後超過幾天還沒送簽就提醒追進度
+const isEntry=c=>(c.case_type||'entry')==='entry';
+const md=d=>{const dt=parseD(d);return`${dt.getMonth()+1}/${dt.getDate()}`};
+const since=d=>-dayDiff(d);
+const CASE_DATES=[['pick_date','挑工日'],['visa_submit_date','送簽日'],['visa_get_date','領簽日'],['arrival_date','安排入境日']];
+function stageOf(c){
+  if(!c.pick_date)return{label:'待挑工',cls:''};
+  if(dayDiff(c.pick_date)>0)return{label:`預計挑工 ${md(c.pick_date)}`,cls:''};
+  if(!c.visa_submit_date){const n=since(c.pick_date);return{label:`國外作業中・${n} 天`,cls:n>=ABROAD_ALERT?'warn':''}}
+  if(!c.visa_get_date)return{label:`送簽中・${Math.max(0,since(c.visa_submit_date))} 天`,cls:''};
+  if(!c.arrival_date)return{label:'已領簽・待排入境',cls:'warn'};
+  return dayDiff(c.arrival_date)>0?{label:`入境 ${md(c.arrival_date)}`,cls:'accent'}:{label:`已入境 ${md(c.arrival_date)}`,cls:''};
+}
+function nextDue(c){
+  let best=null;
+  (subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{const d=dueOf(c,x);if(d&&(!best||d<best.d))best={d,t:x.content}});
+  return best;
+}
+function nextTagHTML(c){
+  const b=nextDue(c);if(!b)return '';
+  const n=dayDiff(b.d);
+  return `<span class="nextTag ${n<0?'late':n<=7?'warn':''}">${md(b.d)} ${esc(b.t)}</span>`;
+}
+function takeoverStage(c){
+  const ml=tkModeLabel(c),pre=ml?ml+'・':'';
+  if(isExpiryTk(c)&&c.contract_end_date){const n=dayDiff(c.contract_end_date);return{label:`${pre}期滿 ${md(c.contract_end_date)}`,cls:n<0?'':n<=7?'warn':'accent'}}
+  if(c.takeover_date)return dayDiff(c.takeover_date)>0?{label:`${pre}預定承接 ${md(c.takeover_date)}`,cls:'accent'}:{label:`${pre}已承接 ${md(c.takeover_date)}`,cls:''};
+  const s=(subs[c.id]||[]).find(x=>typeOf(x)==='takeover'&&!x.is_completed&&x.expiry_date);
+  if(!s)return{label:ml||'承接案件',cls:''};
+  const n=dayDiff(s.expiry_date);
+  return{label:`${pre}${n<0?'登記已過期':'登記到期'} ${md(s.expiry_date)}`,cls:n<0?'late':n<=14?'warn':'accent'};
+}
+function nextThursday(){const d=new Date();d.setDate(d.getDate()+((4-d.getDay()+7)%7));return iso(d)}
+// 承接人欄位：[欄位, 標題, 型別]
+const P_TEXT=[['name_zh','中文姓名'],['name_en','英文姓名'],['passport_no','護照號碼'],['arc_no','居留證號']];
+const P_DATES=[['transfer_deadline','轉出期限'],['contract_end_date','期滿日'],['interview_date','面試日'],['takeover_date','承接日'],['report_date','報到日']];
+const P_CONTACT=[['worker_phone','移工手機','tel'],['agency_phone','仲介電話','tel'],['agency_email','仲介 Email','email']];
+const pName=x=>[x.name_zh,x.name_en].filter(Boolean).join('　')||'（未命名）';
+const telHref=v=>'tel:'+String(v).replace(/[^+\d]/g,'');
+function pplHTML(c){
+  const list=people[c.id]||[];
+  return `<div class="label" style="margin-top:16px">承接人<span style="margin-left:6px">點姓名可編輯</span></div>
+  ${list.map(x=>{
+    const chips=P_DATES.filter(([f])=>x[f]).map(([f,l])=>{
+      const n=dayDiff(x[f]),due=f==='transfer_deadline'||f==='contract_end_date';
+      return `<span class="pChip${due&&n<0?' late':due&&n<=14?' warn':''}">${l} ${ymd(x[f])}${due&&n<0?`（逾期 ${-n} 天）`:due&&n<=14?`（${n===0?'今天':n+' 天後'}）`:''}</span>`}).join('');
+    const ids=[x.passport_no?`護照 ${esc(x.passport_no)}`:'',x.arc_no?`居留證 ${esc(x.arc_no)}`:''].filter(Boolean).join(' · ');
+    const cts=P_CONTACT.filter(([f])=>x[f]).map(([f,l,t])=>`<a class="pLink" href="${t==='tel'?telHref(x[f]):'mailto:'+esc(x[f])}">${l==='移工手機'?'📱':l==='仲介電話'?'☎':'✉'} ${esc(x[f])}</a>`).join('');
+    const ed=openPpl.has(x.id),k='pp-'+x.id;
+    let html=`<div class="pRow${ed?' editing':''}">
+      <div class="body clickable" data-act="ppl-edit" data-id="${x.id}" data-cid="${c.id}" title="點擊編輯">
+        <div class="text">${esc(pName(x))}</div>
+        ${ids?`<div class="meta">${ids}</div>`:''}
+        ${chips?`<div class="pChips">${chips}</div>`:''}
+        ${cts&&!ed?`<div class="pLinks">${cts}</div>`:''}
+        ${x.notes&&!ed?`<div class="subNote">${esc(x.notes)}</div>`:''}
+      </div>
+      <button class="icon" data-act="ppl-del" data-id="${x.id}" data-cid="${c.id}" title="刪除" aria-label="刪除">×</button></div>`;
+    if(ed)html+=`<div class="subEdit">
+      <div class="fieldRow">${P_TEXT.slice(0,2).map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="${k}-${f}" value="${esc(x[f]||'')}"></div>`).join('')}</div>
+      <div class="fieldRow">${P_TEXT.slice(2).map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="${k}-${f}" value="${esc(x[f]||'')}"></div>`).join('')}</div>
+      <div class="fieldRow">${P_DATES.slice(0,2).map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="${k}-${f}" type="date" value="${x[f]||''}"></div>`).join('')}</div>
+      <div class="pDate3">${P_DATES.slice(2).map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="${k}-${f}" type="date" value="${x[f]||''}"></div>`).join('')}</div>
+      <div class="pDate3">${P_CONTACT.map(([f,l,t])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="${k}-${f}" type="${t==='email'?'email':'tel'}" inputmode="${t==='email'?'email':'tel'}" value="${esc(x[f]||'')}"></div>`).join('')}</div>
+      <div class="field"><span class="fieldCaption">備註</span><textarea id="${k}-notes" class="caseNote" placeholder="仲介名稱、原雇主、注意事項…">${esc(x.notes||'')}</textarea></div>
+      <div class="caseFoot"><button class="btn ghost" data-act="ppl-edit" data-id="${x.id}" data-cid="${c.id}">取消</button><button class="btn" style="min-height:38px" data-act="ppl-save" data-id="${x.id}" data-cid="${c.id}">儲存</button></div>
+    </div>`;
+    return html;
+  }).join('')||'<div class="empty">還沒有承接人。</div>'}
+  <div class="pAdd"><input id="pnew-${c.id}" data-pnew="${c.id}" enterkeyhint="done" placeholder="姓名（中文或英文都可以）"><button class="btn secondary" data-act="ppl-add" data-cid="${c.id}">＋ 新增承接人</button></div>`;
+}
+function takeoverTopHTML(c){
+  const m=tkMode(c),ex=m==='expiry';
+  const dateField=(f,l)=>`<div class="field"><span class="fieldCaption">${l}</span><input id="cf-${f}-${c.id}" data-cfield="${f}" data-cid="${c.id}" type="date" value="${c[f]||''}"></div>`;
+  let info='';
+  if(ex&&c.contract_end_date){
+    const n=tkNotifyDue(c);
+    info=`<div class="tkInfo">到新公司上班：<b>${md(addDays(c.contract_end_date,1))}</b>${n?`・接續通報最晚 <b>${md(n)}</b>`:''}・居留效期約在 <b>${md(addDays(c.contract_end_date,-1))}–${md(c.contract_end_date)}</b> 屆滿，送通報時要一起送一站式居留證</div>`;
+  }
+  return `<div class="tkTop">
+    <div class="field"><span class="fieldCaption">承接方式</span><select id="cf-takeover_mode-${c.id}" data-cfield="takeover_mode" data-cid="${c.id}">
+      <option value=""${m?'':' selected'}>請選擇</option>${TK_MODES.map(([v,l])=>`<option value="${v}"${m===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    ${ex?dateField('contract_end_date','原雇主期滿日')+dateField('agree_date','轉換合意日'):dateField('takeover_date','承接日')}
+  </div>
+  ${info}
+  <div class="tiny" style="margin:6px 0 14px">${m==='two'?'雙方合意需要終止聘僱許可函。':m==='three'?'三方合意不需要終止聘僱許可函。':ex?'期滿轉換：外國人期滿隔日到新公司上班。':''}勞動部函隨時可以承接；承接登記走就服站：每週二回報確認單、每週四可到就服站承接（最近的週四：${md(nextThursday())}）。</div>`;
+}
+function stepperHTML(c){
+  const st=d=>!d?'todo':dayDiff(d)>0?'plan':'done';
+  const picked=c.pick_date&&dayDiff(c.pick_date)<=0;
+  const days=picked?(c.visa_submit_date?Math.max(0,dayDiff(c.visa_submit_date)-dayDiff(c.pick_date)):since(c.pick_date)):null;
+  const abroad=c.visa_submit_date?'done':picked?'active':'todo';
+  const steps=[['挑工',st(c.pick_date),c.pick_date?md(c.pick_date):'—'],
+    ['國外作業',abroad,days!=null?`${days} 天`:'—'],
+    ['送簽',st(c.visa_submit_date),c.visa_submit_date?md(c.visa_submit_date):'—'],
+    ['領簽',st(c.visa_get_date),c.visa_get_date?md(c.visa_get_date):'—'],
+    ['入境',st(c.arrival_date),c.arrival_date?md(c.arrival_date):'—']];
+  return `<div class="stepper">${steps.map(([l,s,d])=>`<div class="step ${s}${s==='active'&&days>=ABROAD_ALERT?' alert':''}"><span class="sdot"></span><span class="slabel">${l}</span><span class="sdate">${d}</span></div>`).join('')}</div>`;
+}
+// 期限：入境類看案件入境日，其他看效期欄位
+// 承接方式：two 雙方合意（要終止聘僱許可函）／three 三方合意／expiry 期滿轉換
+const TK_MODES=[['two','雙方合意'],['three','三方合意'],['expiry','期滿轉換']];
+const tkMode=c=>c.takeover_mode||(c.expiry_transfer?'expiry':'');
+const isExpiryTk=c=>tkMode(c)==='expiry';
+const tkModeLabel=c=>(TK_MODES.find(m=>m[0]===tkMode(c))||[,''])[1];
+// 期滿轉換看「轉換合意日」，其他看「承接日」；都是當天算第 1 天
+const tkBase=c=>isExpiryTk(c)?c.agree_date:c.takeover_date;
+function tkNotifyDue(c){
+  const b=tkBase(c);if(!b)return null;let d=addDays(b,2);
+  if(isExpiryTk(c)&&c.contract_end_date&&c.contract_end_date<d)d=c.contract_end_date;
+  return d;
+}
+const based=T=>T.arr!=null||T.tk!=null;
+const baseName=(T,c)=>T.arr!=null?'入境日':(c&&isExpiryTk(c)?'轉換合意日':'承接日');
+const baseDate=(c,T)=>T.arr!=null?c.arrival_date:tkBase(c);
+const ruleOf=(T,c)=>typeof T.rule==='function'?T.rule(c):(T.rule||'');
+function dueOf(c,x){
+  const T=TYPES[typeOf(x)];
+  if(T.tkDue)return T.tkDue(c,x);
+  if(based(T)){const b=baseDate(c,T);if(!b)return null;return addDays(b,T.arr)}
+  return x.expiry_date||null;
+}
+const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
+const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
+let openSubs=new Set(),openItems=new Set(),openPpl=new Set();
+let people={};   // {case_id:[承接人]}
+function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
+function show(sel,on){$(sel).classList.toggle('hidden',!on)}
+async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
+  const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date|sort_order|capture_people/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
+  return false}return true}
+
+/* ---------- 正在做 ---------- */
+// 每一筆是 {k:'item',id} / {k:'sub',id,cid} / {k:'text',t}；第一筆是「主要」
+const fkey=e=>e.k==='text'?'t:'+e.t:e.k+':'+e.id;
+const inFocus=(k,id)=>focus.some(e=>e.k===k&&e.id===id);
+function resolve(e){
+  if(e.k==='item'){const x=items.find(i=>i.id===e.id);return x&&!x.is_completed?x.content:null}
+  if(e.k==='sub'){const c=cases.find(c=>c.id===e.cid),s=c&&(subs[e.cid]||[]).find(s=>s.id===e.id);return s&&!s.is_completed?c.name+' › '+s.content:null}
+  return e.t||null;
+}
+const liveFocus=()=>focus.map(e=>({e,text:resolve(e)})).filter(x=>x.text);
+async function saveFocus(){
+  store.set(K.focus,JSON.stringify(focus));
+  if(focusLocal||!client||!user)return;
+  const {error}=await client.from('capture_focus').upsert({user_id:user.id,entries:focus,updated_at:new Date().toISOString()});
+  if(error){console.error(error);focusLocal=true;pill('正在做只存在這台裝置','bad')}
+}
+async function loadFocus(){
+  const r=await client.from('capture_focus').select('entries').eq('user_id',user.id).maybeSingle();
+  if(r.error){console.warn('capture_focus',r.error);focusLocal=true;try{focus=JSON.parse(store.get(K.focus,'[]'))||[]}catch{focus=[]}return}
+  focusLocal=false;focus=Array.isArray(r.data&&r.data.entries)?r.data.entries:[];
+}
+// 已完成或已刪除的事項自動移出
+function pruneFocus(){
+  if(!loaded.items||!loaded.cases)return;
+  const keep=focus.filter(e=>resolve(e));
+  if(keep.length!==focus.length){focus=keep;saveFocus()}
+}
+// 舊版只記一件「正在做」，第一次開新版時搬過來
+async function migrateOldFocus(){
+  const old=store.get(K.now);
+  if(!focus.length){
+    let local=[];try{local=JSON.parse(store.get(K.focus,'[]'))||[]}catch{}
+    if(local.length&&!focusLocal)focus=local;
+    else if(old){
+      const it=items.find(x=>!x.is_completed&&x.content===old);
+      let e=it?{k:'item',id:it.id}:null;
+      if(!e)for(const c of cases){const s=(subs[c.id]||[]).find(s=>!s.is_completed&&c.name+' › '+s.content===old);if(s){e={k:'sub',id:s.id,cid:c.id};break}}
+      focus=[e||{k:'text',t:old}];
+    }
+    if(focus.length){await saveFocus();renderAll()}
+  }
+  store.set(K.now,'');store.set(K.prev,'');
+}
+function toggleFocus(entry){
+  const k=fkey(entry),i=focus.findIndex(e=>fkey(e)===k);
+  if(i>=0)focus.splice(i,1);
+  else{if(liveFocus().length>=MAXF){pill(`正在做最多 ${MAXF} 件`,'bad');return}focus.push(entry)}
+  renderAll();saveFocus();
+}
+function makeMain(k){const i=focus.findIndex(e=>fkey(e)===k);if(i>0){focus.unshift(focus.splice(i,1)[0]);renderAll();saveFocus()}}
+function removeFocus(k){focus=focus.filter(e=>fkey(e)!==k);renderAll();saveFocus()}
+async function completeFocus(k){
+  const e=focus.find(e=>fkey(e)===k);if(!e)return;
+  removeFocus(k);
+  if(e.k==='item'){const it=items.find(x=>x.id===e.id);if(it){it.is_completed=true;it.updated_at=new Date().toISOString();renderAll()}
+    await run(client.from('capture_items').update({is_completed:true}).eq('id',e.id));refresh('items')}
+  else if(e.k==='sub'){const s=(subs[e.cid]||[]).find(s=>s.id===e.id);if(s){s.is_completed=true;renderAll()}
+    await run(client.from('capture_case_subtasks').update({is_completed:true}).eq('id',e.id));refresh('cases')}
+}
+function renderFocus(){
+  const live=liveFocus(),on=live.length>0;
+  $('#focusCard').classList.toggle('on',on);
+  $('#focusCount').textContent=on?`${live.length} / ${MAXF}`:'';
+  show('#clearNow',live.length>1);
+  if(!on){$('#focusPrimary').innerHTML=`<span class="focusEmpty">還沒設定。按事項旁的 ▶ 加進來，最多可以同時放 ${MAXF} 件。</span>`;$('#focusChips').innerHTML='';return}
+  const [m,...rest]=live,mk=esc(fkey(m.e));
+  $('#focusPrimary').innerHTML=`<span class="focusText">${esc(m.text)}</span><span class="fActs">
+    <button class="icon" data-act="f-done" data-fk="${mk}" title="完成" aria-label="完成">✓</button>
+    <button class="icon" data-act="f-out" data-fk="${mk}" title="移出正在做" aria-label="移出正在做">×</button></span>`;
+  $('#focusChips').innerHTML=rest.map(x=>{const k=esc(fkey(x.e));return `<span class="fchip">
+    <button class="fchipText" data-act="f-main" data-fk="${k}" title="設為主要">${esc(x.text)}</button>
+    <button class="fchipBtn" data-act="f-done" data-fk="${k}" title="完成" aria-label="完成">✓</button>
+    <button class="fchipBtn" data-act="f-out" data-fk="${k}" title="移出正在做" aria-label="移出正在做">×</button></span>`}).join('');
+}
+
+/* ---------- 一般 ---------- */
+function renderGeneral(){
+  const open=items.filter(x=>!x.is_completed).sort((a,b)=>(b.is_pinned-a.is_pinned)||(a.planned_date||'9999').localeCompare(b.planned_date||'9999')||(new Date(b.updated_at)-new Date(a.updated_at)));
+  const doneAll=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+  const doneToday=doneAll.filter(x=>isToday(x.updated_at));
+  $('#openCount').textContent=open.length?`${open.length} 件`:'';
+  const ol=$('#openList'),saved={};ol.querySelectorAll('input[id],textarea[id]').forEach(el=>saved[el.id]=el.value);
+  const actId=ol.contains(document.activeElement)?document.activeElement.id:null;
+  ol.innerHTML=open.length?open.map(x=>{
+    const late=x.planned_date&&dayDiff(x.planned_date)<0,bits=[];
+    if(x.planned_date)bits.push(`<span class="due${late?' late':''}">${late?'逾期':'預計'} ${dueLabel(x.planned_date)}</span>`);
+    bits.push('記錄 '+stamp(x.created_at));
+    if(x.is_pinned)bits.push('已釘選');
+    const f=inFocus('item',x.id);
+    return `<div class="row${f?' isNow':''}">
+      <button class="check" data-act="done" data-id="${x.id}" aria-label="完成"></button>
+      <div class="body clickable" data-act="item-edit" data-id="${x.id}" title="點擊修改內容、說明與日期"><div class="text">${esc(x.content)}</div><div class="meta">${bits.join(' · ')}</div>${x.notes&&!openItems.has(x.id)?`<div class="subNote">${esc(x.notes)}</div>`:''}</div>
+      <div class="actions">
+        <button class="icon${f?' on':''}" data-act="now" data-id="${x.id}" title="${f?'移出正在做':'加入正在做'}" aria-label="${f?'移出正在做':'加入正在做'}">▶</button>
+        <button class="icon${x.is_pinned?' pin':''}" data-act="pin" data-id="${x.id}" title="釘選" aria-label="釘選">⌖</button>
+        <button class="icon" data-act="del" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
+      </div></div>`+(openItems.has(x.id)?`<div class="subEdit itemEdit">
+        <div class="field"><span class="fieldCaption">內容</span><input id="it-name-${x.id}" data-save="${x.id}" enterkeyhint="done" value="${esc(x.content)}"></div>
+        <div class="field"><span class="fieldCaption">說明</span><textarea id="it-note-${x.id}" class="caseNote" placeholder="補充說明、聯絡人、要帶的東西…">${esc(x.notes||'')}</textarea></div>
+        <div class="field"><span class="fieldCaption">預計日期</span>
+          <div class="dateRow" style="margin-top:0"><input id="it-date-${x.id}" type="date" value="${x.planned_date||''}">
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="0">今天</button>
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="1">明天</button>
+            <button type="button" class="btn secondary" data-act="it-date" data-id="${x.id}" data-off="">不指定</button></div></div>
+        <div class="caseFoot"><button class="btn ghost" data-act="item-edit" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="item-save" data-id="${x.id}">儲存</button></div>
+      </div>`:'')}).join(''):`<div class="empty">很好，暫時沒有東西追著妳跑。</div>`;
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
+  if(actId)document.getElementById(actId)?.focus({preventScroll:true});
+  $('#doneList').innerHTML=doneToday.length?doneToday.map(x=>`<div class="row done">
+      <div class="body"><div class="text">${esc(x.content)}</div><div class="meta">完成 ${stamp(x.updated_at)}</div></div>
+      <button class="icon" data-act="undo" data-id="${x.id}" title="還原" aria-label="還原">↶</button></div>`).join(''):`<div class="empty">今天還沒有完成紀錄。</div>`;
+  const older=doneAll.length-doneToday.length;
+  $('#doneNote').textContent=older?`另有 ${older} 筆較早完成的紀錄。`:'';
+  show('#clearDone',doneAll.length>0);
+  return open.length;
+}
+
+/* ---------- 案件 ---------- */
+const F=(key,role)=>document.getElementById(`${key}-${role}`);
+function typeSelect(key,t,manual){
+  return `<select id="${key}-type" data-key="${key}" data-role="type"${manual?' data-manual="1"':''}>${TYPE_ORDER.map(k=>`<option value="${k}"${k===t?' selected':''}>${TYPES[k].label}</option>`).join('')}</select>`;
+}
+function dateInput(key,role,caption,val,hint=''){
+  return `<div class="field"><span class="fieldCaption">${caption}${hint?`<span class="ruleHint">${hint}</span>`:''}</span><input id="${key}-${role}" data-key="${key}" data-role="${role}" type="date" value="${val||''}"></div>`;
+}
+// 依類型決定要出現哪些日期欄位
+function dateFields(key,t,v){
+  const T=TYPES[t];let h='';
+  if(T.from&&T.noExp)h+=`<div class="fieldRow">${dateInput(key,'from',T.from,v.from,typeof T.rule==='string'?T.rule:'')}${v.exp?dateInput(key,'exp','效期到期日',v.exp):''}</div>`;
+  else if(T.from)h+=`<div class="fieldRow">${dateInput(key,'from',T.from,v.from)}${dateInput(key,'exp',T.expLabel||'效期到期日',v.exp,typeof T.rule==='string'?T.rule:'')}</div>`;
+  else if(T.res)h+=`<div class="fieldRow">${dateInput(key,'exp','外國人居留效期',v.exp)}</div>`;
+  else if(v.from||v.exp)h+=`<div class="fieldRow">${v.from?dateInput(key,'from','領證／發文日',v.from):''}${v.exp?dateInput(key,'exp','效期到期日',v.exp):''}</div>`;
+  if(T.dhl||v.dhl)h+=dateInput(key,'dhl','DHL 寄國外日',v.dhl);
+  return h;
+}
+function rebuildDates(key,src){
+  const box=F(key,'dates'),sel=F(key,'type');if(!box||!sel)return;
+  const get=r=>(src&&src[`${key}-${r}`]!=null)?src[`${key}-${r}`]:(F(key,r)?.value||'');
+  box.innerHTML=dateFields(key,sel.value,{from:get('from'),exp:get('exp'),dhl:get('dhl')});
+}
+function recalc(key){
+  const T=TYPES[F(key,'type')?.value],from=F(key,'from'),exp=F(key,'exp');
+  if(T&&T.calc&&from&&from.value&&exp)exp.value=T.calc(from.value);
+}
+function onField(e){
+  const el=e.target,key=el.dataset&&el.dataset.key,role=el.dataset&&el.dataset.role;if(!key)return;
+  if(role==='type'){if(e.type==='change')el.dataset.manual='1';rebuildDates(key);recalc(key)}
+  else if(role==='from')recalc(key);
+  else if(role==='name'){
+    const sel=F(key,'type');if(!sel||sel.dataset.manual)return;
+    const g=guessType(el.value);if(sel.value!==g){sel.value=g;rebuildDates(key);recalc(key)}
+  }
+}
+
+function subRowHTML(c,x){
+  const t=typeOf(x),T=TYPES[t],exp=dueOf(c,x),dd=exp?dayDiff(exp):null;
+  const late=!x.is_completed&&exp&&dd<0,soon=!x.is_completed&&exp&&dd>=0&&dd<=14;
+  const meta=[
+    x.status?esc(x.status):'',
+    x.issue_date?`${T.from||'日期'} ${ymd(x.issue_date)}`:'',
+    exp?`<span class="due${late?' late':soon?' soon':''}">${late?'已過期':(based(T)?'期限':T.expLabel?'到期':'效期到')} ${ymd(exp)}${late?`（逾期 ${-dd} 天）`:soon?`（${dd===0?'今天':dd===1?'明天':dd+' 天後'}）`:''}</span>`:'',
+    (based(T)&&!baseDate(c,T)&&!x.is_completed)?`填${baseName(T,c)}後自動算期限`:'',
+    (T.res&&x.expiry_date)?`<span class="due${!x.is_completed&&exp&&x.expiry_date<exp?' late':''}">居留效期 ${ymd(x.expiry_date)}${!x.is_completed&&exp&&x.expiry_date<exp?'（早於期限，注意逾期居留）':''}</span>`:'',
+    x.dhl_date?`DHL 寄出 ${ymd(x.dhl_date)}`:'',
+    x.task_date?`辦理 ${dueLabel(x.task_date)}`:''
+  ].filter(Boolean).join(' · ');
+  const editing=openSubs.has(x.id),key='se-'+x.id;
+  let html=`<div class="subRow${x.is_completed?' done':''}${editing?' editing':''}">
+    <button class="check${x.is_completed?' on':''}" data-act="sub-toggle" data-cid="${c.id}" data-id="${x.id}" aria-label="${x.is_completed?'改回未完成':'完成'}"></button>
+    <div class="body clickable" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}" title="點擊編輯">
+      <div class="text">${esc(x.content)}${T.short?`<span class="tag">${T.short}</span>`:''}</div>${meta?`<div class="meta">${meta}</div>`:''}
+      ${x.notes&&!editing?`<div class="subNote">${esc(x.notes)}</div>`:''}
+    </div>
+    <div class="actions">
+      <button class="icon${inFocus('sub',x.id)?' on':''}" data-act="sub-now" data-cid="${c.id}" data-id="${x.id}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button>
+      <button class="icon" data-act="sub-del" data-cid="${c.id}" data-id="${x.id}" title="刪除" aria-label="刪除">×</button>
+    </div></div>`;
+  if(editing)html+=`<div class="subEdit">
+    <div class="field"><span class="fieldCaption">名稱</span><input id="${key}-name" data-key="${key}" data-role="name" value="${esc(x.content)}"></div>
+    <div class="fieldRow">
+      <div class="field"><span class="fieldCaption">類型</span>${typeSelect(key,t,!!x.doc_type)}</div>
+      <div class="field"><span class="fieldCaption">狀態</span><input id="${key}-status" value="${esc(x.status||'')}" placeholder="例如：審查中"></div>
+    </div>
+    <div id="${key}-dates" class="subform">${dateFields(key,t,{from:x.issue_date,exp:x.expiry_date,dhl:x.dhl_date})}</div>
+    ${based(T)?`<div class="tiny" style="margin-top:0">期限依案件${baseName(T,c)}自動計算：${ruleOf(T,c)}${baseDate(c,T)?`，目前為 ${ymd(exp)}`:''}</div>`:''}
+    ${x.task_date?`<div class="tiny" style="margin-top:0">舊的辦理日：${ymd(x.task_date)} <button class="btn ghost" data-act="sub-cleartask" data-cid="${c.id}" data-id="${x.id}">清除</button></div>`:''}
+    <div class="field"><span class="fieldCaption">備註</span><textarea id="${key}-notes" class="caseNote" placeholder="例如：文號、承辦人、補件內容…">${esc(x.notes||'')}</textarea></div>
+    <div class="caseFoot"><button class="btn ghost" data-act="sub-edit" data-cid="${c.id}" data-id="${x.id}">取消</button><button class="btn" style="min-height:38px" data-act="sub-save" data-cid="${c.id}" data-id="${x.id}">儲存</button></div>
+  </div>`;
+  return html;
+}
+function renderCases(){
+  const box=$('#caseList');
+  // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
+  const saved={};box.querySelectorAll('input[id],select[id],textarea[id$="-notes"]').forEach(el=>saved[el.id]=el.value);
+  const chk={};box.querySelectorAll('input[type=checkbox][id]').forEach(el=>chk[el.id]=el.checked);
+  const manual={};box.querySelectorAll('select[data-manual]').forEach(el=>manual[el.id]=1);
+  const act=document.activeElement,actId=box.contains(act)?act.id:null;
+  const sel=actId&&typeof act.selectionStart==='number'?[act.selectionStart,act.selectionEnd]:null;
+  if(actId&&act.tagName==='TEXTAREA')saved[actId]=act.value;
+
+  if(sortMode){
+    box.innerHTML=`<div class="card sortCard"><div class="tiny" style="margin:0 0 10px">拖曳 ⠿ 或按 ↑ ↓ 調整順序，順序會自動儲存。</div>
+      ${cases.map((c,i)=>`<div class="sortRow" draggable="true" data-cid="${c.id}" data-i="${i}">
+        <span class="grip" aria-hidden="true">⠿</span><span class="sortName">${esc(c.name)}</span>
+        <button class="icon" data-act="sort-up" data-cid="${c.id}"${i?'':' disabled'} title="上移" aria-label="上移">↑</button>
+        <button class="icon" data-act="sort-down" data-cid="${c.id}"${i===cases.length-1?' disabled':''} title="下移" aria-label="下移">↓</button>
+      </div>`).join('')}
+      <div class="caseFoot"><span class="tiny" style="margin:0">${cases.length} 個案件</span><button class="btn" style="min-height:38px" data-act="sort-toggle">完成</button></div></div>`;
+    return cases.length;
+  }
+  const list=caseQuery?cases.filter(c=>c.name.toLowerCase().includes(caseQuery.toLowerCase())):cases;
+  box.innerHTML=list.length?list.map(c=>{
+    const a=subs[c.id]||[],d=a.filter(x=>x.is_completed).length,key='c-'+c.id;
+    return `<details class="caseCard" data-cid="${c.id}"${openCases.has(c.id)?' open':''}>
+      <summary><span class="caseHead"><span class="caseTitle">${esc(c.name)}</span>${isEntry(c)?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(stageOf(c)):caseType(c)==='takeover'?(s=>`<span class="stageTag ${s.cls}">${s.label}</span>`)(takeoverStage(c)):''}${nextTagHTML(c)}<span class="progress">${a.length?`${d}/${a.length}`:''}</span></span><span class="chev">⌄</span></summary>
+      <div class="caseBody">
+        ${caseType(c)==='takeover'?takeoverTopHTML(c)+pplHTML(c):''}
+        ${isEntry(c)?`${stepperHTML(c)}
+        <div class="caseDates">${CASE_DATES.map(([f,l])=>`<div class="field"><span class="fieldCaption">${l}</span><input id="cf-${f}-${c.id}" data-cfield="${f}" data-cid="${c.id}" type="date" value="${c[f]||''}"></div>`).join('')}</div>
+        <div class="label" style="margin-top:14px">國外進度追蹤</div>
+        <div class="logAdd"><input id="log-d-${c.id}" type="date" value="${todayISO()}"><input id="log-t-${c.id}" data-logenter="${c.id}" enterkeyhint="done" placeholder="例如：體檢完成、護照送件…"><button type="button" class="btn secondary" data-act="log-add" data-cid="${c.id}">記錄</button></div>
+        <div class="logList">${(c.progress_log||[]).map(e=>`<div class="logRow"><span class="logDate">${md(e.d)}</span><span class="logText">${esc(e.t)}</span><button class="icon" data-act="log-del" data-cid="${c.id}" data-lid="${esc(e.id)}" title="刪除" aria-label="刪除">×</button></div>`).join('')}</div>
+        <div style="height:14px"></div>`:''}
+        <div class="label">備註</div>
+        <textarea id="note-${c.id}" class="caseNote" data-note="${c.id}" placeholder="目前進度、待追蹤事項…">${esc(c.notes||'')}</textarea>
+        <div class="tiny" style="margin-top:4px">離開輸入框就會自動儲存。</div>
+        <div class="label" style="margin-top:14px">子任務<span style="margin-left:6px">點名稱可編輯</span></div>
+        ${a.length?a.map(x=>subRowHTML(c,x)).join(''):(pickOpen.has(c.id)?'':'<div class="empty">還沒有子任務。</div>')}
+        ${pickOpen.has(c.id)?pickerHTML(c):''}
+        <div class="label" style="margin-top:16px">新增子任務</div>
+        <div class="subform">
+          <div class="chips"><span class="fieldCaption">常用</span>
+            ${TPL.map(([name,t])=>`<button type="button" class="chip" data-act="sub-tpl" data-cid="${c.id}" data-name="${name}" data-type="${t}">${name}</button>`).join('')}
+          </div>
+          <div class="field"><span class="fieldCaption">子任務</span><input id="${key}-name" data-key="${key}" data-role="name" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：求才登記"></div>
+          <div class="fieldRow">
+            <div class="field"><span class="fieldCaption">類型</span>${typeSelect(key,'general',false)}</div>
+            <div class="field"><span class="fieldCaption">狀態</span><input id="${key}-status" data-enter="${c.id}" enterkeyhint="done" placeholder="例如：審查中"></div>
+          </div>
+          <div id="${key}-dates" class="subform"></div>
+        </div>
+        <div class="caseFoot">
+          <span class="footLeft"><button class="btn ghost" style="color:var(--danger)" data-act="case-del" data-cid="${c.id}">刪除案件</button>${flowOf(c)?`<button class="btn ghost" data-act="case-flow" data-cid="${c.id}">新增流程項目</button>`:''}<select class="ctype" data-ctype="${c.id}" aria-label="案件類型">${CASE_TYPES.map(([v,l])=>`<option value="${v}"${caseType(c)===v?' selected':''}>${l}</option>`).join('')}</select></span>
+          <button class="btn" style="min-height:40px" data-act="sub-add" data-cid="${c.id}">＋ 新增子任務</button>
+        </div>
+      </div></details>`}).join(''):`<div class="card empty">${caseQuery?`找不到符合「${esc(caseQuery)}」的案件。`:'還沒有案件。在上面輸入名稱就能新增。'}</div>`;
+
+  // 還原：先還原類型，依類型重建日期欄位，再還原其他值
+  box.querySelectorAll('select[data-role="type"]').forEach(s=>{
+    if(saved[s.id]!=null)s.value=saved[s.id];
+    if(manual[s.id])s.dataset.manual='1';
+    rebuildDates(s.dataset.key,saved);
+  });
+  Object.entries(saved).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&el.tagName!=='SELECT'&&el.type!=='checkbox')el.value=v});
+  Object.entries(chk).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&!el.disabled)el.checked=v});
+  pickOpen.forEach(syncPicker);
+  if(actId){const el=document.getElementById(actId);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
+  return cases.length;
+}
+
+/* ---------- 近期 ---------- */
+function renderUpcoming(){
+  const u=[];
+  items.filter(x=>!x.is_completed&&x.planned_date).forEach(x=>u.push({d:x.planned_date,t:x.content,m:'一般事項',k:'item',id:x.id}));
+  cases.forEach(c=>(subs[c.id]||[]).filter(x=>!x.is_completed).forEach(x=>{
+    const t=c.name+' › '+x.content,ref={k:'sub',id:x.id,cid:c.id};
+    if(x.task_date)u.push({...ref,d:x.task_date,t,m:x.status?`${x.status}・辦理日`:'辦理日'});
+    const T=TYPES[typeOf(x)];
+    const due=dueOf(c,x);
+    if(due&&based(T))u.push({...ref,d:due,t,m:`${T.label}期限・${ruleOf(T,c)}`});
+    else if(due)u.push({...ref,d:due,t,m:T.expLabel?`${T.short}到期`:`${T.short||''}效期到期`+(x.issue_date?`・${T.from||''} ${ymd(x.issue_date)}`:'')});
+    if(T.res&&x.expiry_date)u.push({...ref,d:x.expiry_date,t,m:'外國人居留效期到期'});
+    if(x.dhl_date&&dayDiff(x.dhl_date)>=0)u.push({...ref,d:x.dhl_date,t,m:'DHL 寄國外日'});
+  }));
+  cases.filter(c=>caseType(c)==='takeover').forEach(c=>(people[c.id]||[]).forEach(x=>{
+    const t=c.name+' › '+pName(x);
+    P_DATES.forEach(([f,l])=>{if(x[f]&&(f==='transfer_deadline'||f==='contract_end_date'||dayDiff(x[f])>=0))u.push({k:'case',d:x[f],t,m:'承接人・'+l})});
+  }));
+  cases.filter(c=>caseType(c)==='takeover').forEach(c=>{
+    if(isExpiryTk(c)){if(c.contract_end_date&&dayDiff(c.contract_end_date)>=0)u.push({k:'case',d:c.contract_end_date,t:c.name,m:'原雇主期滿日・隔日到新公司上班'})}
+    else if(c.takeover_date&&dayDiff(c.takeover_date)>=0)u.push({k:'case',d:c.takeover_date,t:c.name,m:`承接日${tkModeLabel(c)?'・'+tkModeLabel(c):''}`});
+  });
+  cases.filter(isEntry).forEach(c=>{
+    if(c.arrival_date&&dayDiff(c.arrival_date)>=0)u.push({k:'case',d:c.arrival_date,t:c.name,m:'安排入境日'});
+    if(c.pick_date&&!c.visa_submit_date&&dayDiff(c.pick_date)<=0){
+      const n=since(c.pick_date);
+      if(n>=ABROAD_ALERT-7)u.push({k:'case',d:addDays(c.pick_date,ABROAD_ALERT),t:c.name,m:`國外作業已 ${n} 天・該追進度了`});
+    }
+  });
+  u.sort((a,b)=>a.d.localeCompare(b.d));
+  const groups=[['逾期',x=>x<0,'late'],['今天',x=>x===0,''],['七天內',x=>x>0&&x<=7,''],['之後',x=>x>7,'']];
+  let html='';
+  groups.forEach(([name,f,cls])=>{
+    const g=u.filter(x=>f(dayDiff(x.d)));if(!g.length)return;
+    const off=upFold.has(name);
+    html+=`<button class="upGroup ${cls}${off?' off':''}" data-act="up-fold" data-g="${name}">${name}<span class="n">${g.length}</span><span class="foldArrow">⌄</span></button>`;
+    if(off)return;
+    html+=g.slice(0,60).map(x=>`<div class="upItem ${cls}">
+      <div class="upDate">${dueLabel(x.d)}</div>
+      <div class="body"><div class="upTitle">${esc(x.t)}</div><div class="meta">${esc(x.m)}</div></div>
+      ${x.k==='case'?'':`<button class="icon${inFocus(x.k,x.id)?' on':''}" data-act="up-now" data-k="${x.k}" data-id="${x.id}" data-cid="${x.cid||''}" title="加入／移出正在做" aria-label="加入或移出正在做">▶</button>`}</div>`).join('');
+  });
+  $('#upcomingList').innerHTML=html||'<div class="card empty">目前沒有有日期的事項。新增時選個日期，就會出現在這裡。</div>';
+  return u.filter(x=>dayDiff(x.d)<=0).length;
+}
+
+function renderAll(){
+  renderFocus();
+  const nOpen=renderGeneral(),nCases=renderCases(),nUrgent=renderUpcoming();
+  $('#n-general').textContent=nOpen||'';
+  $('#n-cases').textContent=nCases||'';
+  const up=$('#n-upcoming');up.textContent=nUrgent||'';up.className='n'+(nUrgent?' late':'');
+}
+
+/* ---------- 同步 ---------- */
+async function loadItems(){const {data,error}=await client.from('capture_items').select('*').order('created_at',{ascending:true});if(error)throw error;items=data||[]}
+async function loadCases(){
+  const r=await client.from('capture_cases').select('*').eq('user_id',user.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false});
+  if(r.error)throw r.error;
+  const list=r.data||[],next={};list.forEach(c=>next[c.id]=[]);
+  if(list.length){
+    const q=await client.from('capture_case_subtasks').select('*').in('case_id',list.map(c=>c.id)).order('created_at',{ascending:true});
+    if(q.error)throw q.error;
+    (q.data||[]).forEach(s=>(next[s.case_id]||(next[s.case_id]=[])).push(s));
+    list.forEach(c=>{const F=flowOf(c);if(F)next[c.id].sort((x,y)=>(F.idx(x)-F.idx(y))||String(x.created_at).localeCompare(String(y.created_at)))});
+  }
+  const ppl={};list.forEach(c=>ppl[c.id]=[]);
+  const tk=list.filter(c=>caseType(c)==='takeover');
+  if(tk.length){
+    const w=await client.from('capture_people').select('*').in('case_id',tk.map(c=>c.id)).order('created_at',{ascending:true});
+    if(w.error){if(!/capture_people/.test(w.error.message||''))throw w.error}
+    else (w.data||[]).forEach(x=>(ppl[x.case_id]||(ppl[x.case_id]=[])).push(x));
+  }
+  cases=list;subs=next;people=ppl;
+}
+async function refresh(which='all'){
+  if(!client||!user)return;
+  pill('同步中…');
+  try{if(which!=='cases'){await loadItems();loaded.items=true}if(which!=='items'){await loadCases();loaded.cases=true}if(which==='all')await loadFocus();pill('● 已同步','ok')}
+  catch(e){console.error(e);pill('同步失敗','bad')}
+  pruneFocus();renderAll();
+}
+let rt;function softRefresh(){clearTimeout(rt);rt=setTimeout(()=>refresh('all'),300)}
+function subscribe(){
+  if(channel)client.removeChannel(channel);
+  channel=client.channel('capture-'+user.id);
+  ['capture_items','capture_cases','capture_case_subtasks','capture_focus','capture_people'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t,filter:`user_id=eq.${user.id}`},softRefresh));
+  channel.subscribe();
+}
+async function migrateLocal(){
+  let raw=[];try{raw=JSON.parse(store.get(K.items,'[]'))}catch{}
+  if(!raw.length)return;
+  const existing=new Set(items.map(x=>x.id));
+  const payload=raw.filter(x=>!existing.has(x.id)).map(x=>({id:x.id,user_id:user.id,content:x.text,planned_date:x.due||null,is_pinned:!!x.pin,is_completed:!!x.done,is_active:false,created_at:new Date(x.ts||Date.now()).toISOString(),updated_at:new Date(x.updated||x.ts||Date.now()).toISOString()}));
+  if(!payload.length){store.set(K.items,'');return}
+  const {error}=await client.from('capture_items').insert(payload);
+  if(!error){store.set(K.items,'');await refresh('items')}
+}
+
+/* ---------- 登入流程 ---------- */
+function gate(which){
+  document.body.classList.add('locked');show('#gate',true);
+  show('#connectCard',which==='connect');show('#loginCard',which==='login');
+  pill(which==='login'?'待登入':'未連接');
+}
+async function startApp(){
+  document.body.classList.remove('locked');show('#gate',false);
+  $('#who').textContent=user.email||'';
+  await refresh('all');await migrateLocal();await migrateOldFocus();subscribe();
+}
+async function init(){
+  let cfg={};try{cfg=JSON.parse(store.get(K.cfg,'{}'))}catch{}
+  if(!cfg.url||!cfg.key){gate('connect');return}
+  $('#sbUrl').value=cfg.url;
+  client=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const {data:{session}}=await client.auth.getSession();
+  if(session?.user){user=session.user;startApp()}else gate('login');
+}
+$('#connectCard').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const url=$('#sbUrl').value.trim().replace(/\/$/,''),key=$('#sbKey').value.trim();
+  if(!url||!key){$('#connectStatus').textContent='請填 Project URL 與 Publishable key。';return}
+  if(key.startsWith('sb_secret')){$('#connectStatus').textContent='這是 Secret key，請改貼 Publishable key。';return}
+  store.set(K.cfg,JSON.stringify({url,key}));$('#connectStatus').textContent='已儲存。';await init();
+});
+$('#loginCard').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('#email').value.trim(),password=$('#password').value;
+  $('#loginStatus').textContent='登入中…';
+  const {data,error}=await client.auth.signInWithPassword({email,password});
+  if(error){$('#loginStatus').textContent='登入失敗：'+error.message;return}
+  user=data.user;$('#loginStatus').textContent='';await startApp();
+});
+
+/* ---------- 新增 ---------- */
+$('#captureForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const input=$('#captureInput'),content=input.value.trim();
+  if(!content){input.focus();return}
+  const planned_date=$('#dueDate').value||null;
+  input.value='';$('#dueDate').value='';input.focus();
+  if(!await run(client.from('capture_items').insert({user_id:user.id,content,planned_date}))){input.value=content;return}
+  refresh('items');
+});
+$('#caseForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const el=$('#caseName'),name=el.value.trim();if(!name){el.focus();return}
+  el.value='';pill('同步中…');
+  const type=$('#caseType').value,row={user_id:user.id,name};if(type!=='entry')row.case_type=type;
+  row.sort_order=Math.min(0,...cases.map(c=>c.sort_order).filter(v=>typeof v==='number'))-1;
+  const {data,error}=await client.from('capture_cases').insert(row).select().single();
+  if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
+  if(type!=='general'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
+  refresh('cases');
+});
+function moveCase(from,to){
+  if(to<0||to>=cases.length||from===to)return;
+  cases.splice(to,0,cases.splice(from,1)[0]);
+  cases.forEach((c,i)=>{if(c.sort_order!==i){c.sort_order=i;sortDirty.add(c.id)}});
+  renderCases();queueOrder();
+}
+let orderT;
+function queueOrder(){clearTimeout(orderT);orderT=setTimeout(flushOrder,700)}
+async function flushOrder(){
+  clearTimeout(orderT);
+  const ids=[...sortDirty];if(!ids.length||!client||!user)return;
+  sortDirty.clear();pill('同步中…');
+  const rs=await Promise.all(ids.map(id=>client.from('capture_cases').update({sort_order:cases.find(c=>c.id===id)?.sort_order??0}).eq('id',id)));
+  if(rs.some(r=>r.error)){console.error(rs.find(r=>r.error).error);pill('順序儲存失敗','bad')}else pill('● 已同步','ok');
+}
+const P_FIELDS=[...P_TEXT,...P_DATES,...P_CONTACT].map(a=>a[0]);
+async function addPerson(cid){
+  const el=document.getElementById('pnew-'+cid),v=el.value.trim();
+  if(!v){el.focus();return}
+  const row={user_id:user.id,case_id:cid};
+  row[/[\u4e00-\u9fa5]/.test(v)?'name_zh':'name_en']=v;
+  el.value='';
+  if(!await run(client.from('capture_people').insert(row))){el.value=v;return}
+  refresh('cases');
+}
+async function savePerson(cid,id){
+  const g=f=>document.getElementById(`pp-${id}-${f}`);
+  const patch={};
+  P_FIELDS.forEach(f=>{const e=g(f);if(e)patch[f]=e.value.trim()||null});
+  const n=g('notes');if(n)patch.notes=n.value||null;
+  if(await run(client.from('capture_people').update(patch).eq('id',id))){openPpl.delete(id);refresh('cases')}
+}
+async function addLog(cid){
+  const c=cases.find(x=>x.id===cid),te=document.getElementById('log-t-'+cid);if(!c||!te)return;
+  const t=te.value.trim();if(!t){te.focus();return}
+  const d=document.getElementById('log-d-'+cid).value||todayISO();
+  const log=[{id:Date.now().toString(36),d,t},...(c.progress_log||[])].sort((a,b)=>b.d.localeCompare(a.d));
+  te.value='';const prev=c.progress_log;c.progress_log=log;renderAll();
+  if(!await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid))){c.progress_log=prev;te.value=t;renderAll();return}
+  refresh('cases');
+}
+async function insertFlow(cid,names){
+  const c=cases.find(x=>x.id===cid),F=c&&flowOf(c);if(!F)return 0;
+  const have=new Set((subs[cid]||[]).map(F.idx));
+  const todo=F.list.filter((n,i)=>!have.has(i)&&(!names||names.includes(n)));if(!todo.length)return 0;
+  const base=Date.now();
+  const rows=todo.map((content,i)=>{const r={user_id:user.id,case_id:cid,content,created_at:new Date(base+i*1000).toISOString()};const dt=F.doc&&F.doc[content];if(dt&&dt!==guessType(content))r.doc_type=dt;return r});
+  return await run(client.from('capture_case_subtasks').insert(rows))?rows.length:-1;
+}
+// 讀出一組欄位要寫進資料庫的值
+function readDates(key){const v=r=>F(key,r)?(F(key,r).value||null):null;return{issue_date:v('from'),expiry_date:v('exp'),dhl_date:v('dhl')}}
+async function saveItem(id){
+  const it=items.find(x=>x.id===id);if(!it)return;
+  const content=document.getElementById('it-name-'+id).value.trim()||it.content;
+  const planned_date=document.getElementById('it-date-'+id).value||null;
+  const patch={content,planned_date},notes=document.getElementById('it-note-'+id).value;
+  if(notes!==(it.notes||''))patch.notes=notes||null;
+  if(!await run(client.from('capture_items').update(patch).eq('id',id)))return;
+  openItems.delete(id);refresh('items');
+}
+async function addSub(cid){
+  const key='c-'+cid,nameEl=F(key,'name');
+  const content=nameEl.value.trim();if(!content){nameEl.focus();return}
+  const t=F(key,'type').value,dts=readDates(key);
+  const row={user_id:user.id,case_id:cid,content,status:F(key,'status').value.trim()||null,expiry_date:dts.expiry_date};
+  if(dts.issue_date)row.issue_date=dts.issue_date;
+  if(dts.dhl_date)row.dhl_date=dts.dhl_date;
+  if(t!==guessType(content))row.doc_type=t;   // 名稱猜得到類型就不必另存
+  nameEl.value='';F(key,'status').value='';const sel=F(key,'type');sel.value='general';delete sel.dataset.manual;rebuildDates(key,{});
+  if(!await run(client.from('capture_case_subtasks').insert(row))){nameEl.value=content;return}
+  refresh('cases');
+}
+
+/* ---------- 所有按鈕 ---------- */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const {act,id,cid}=b.dataset;
+  const it=items.find(x=>x.id===id);
+  const sub=cid?(subs[cid]||[]).find(x=>x.id===id):null;
+  const cs=cid?cases.find(x=>x.id===cid):null;
+  switch(act){
+    case 'tab':setTab(b.dataset.tab);break;
+    case 'date':$('#dueDate').value=b.dataset.off===''?'':todayISO(+b.dataset.off);break;
+    case 'now':if(it)toggleFocus({k:'item',id});break;
+    case 'sub-now':if(sub)toggleFocus({k:'sub',id,cid});break;
+    case 'up-now':toggleFocus(b.dataset.k==='sub'?{k:'sub',id,cid}:{k:'item',id});break;
+    case 'f-main':makeMain(b.dataset.fk);break;
+    case 'f-out':removeFocus(b.dataset.fk);break;
+    case 'f-done':completeFocus(b.dataset.fk);break;
+    case 'clearNow':if(confirm('清空所有「正在做」？（事項本身不會刪除）')){focus=[];renderAll();saveFocus()}break;
+    case 'done':
+      if(!it)break;
+      it.is_completed=true;it.updated_at=new Date().toISOString();renderAll();
+      await run(client.from('capture_items').update({is_completed:true}).eq('id',id));refresh('items');break;
+    case 'undo':
+      if(!it)break;it.is_completed=false;renderAll();
+      await run(client.from('capture_items').update({is_completed:false}).eq('id',id));refresh('items');break;
+    case 'pin':
+      if(!it)break;it.is_pinned=!it.is_pinned;renderAll();
+      await run(client.from('capture_items').update({is_pinned:it.is_pinned}).eq('id',id));refresh('items');break;
+    case 'del':
+      if(it&&confirm(`刪除「${it.content}」？`)&&await run(client.from('capture_items').delete().eq('id',id)))refresh('items');break;
+    case 'clearDone':{
+      const ids=items.filter(x=>x.is_completed).map(x=>x.id);
+      if(ids.length&&confirm(`刪除全部 ${ids.length} 筆已完成紀錄？刪除後無法復原。`)&&await run(client.from('capture_items').delete().in('id',ids)))refresh('items');
+      break;}
+    case 'sub-toggle':
+      if(!sub)break;sub.is_completed=!sub.is_completed;renderAll();
+      await run(client.from('capture_case_subtasks').update({is_completed:sub.is_completed}).eq('id',id));refresh('cases');break;
+    case 'sub-del':
+      if(sub&&confirm(`刪除子任務「${sub.content}」？`)&&await run(client.from('capture_case_subtasks').delete().eq('id',id)))refresh('cases');break;
+    case 'sub-add':addSub(cid);break;
+    case 'ppl-add':addPerson(cid);break;
+    case 'ppl-edit':openPpl.has(id)?openPpl.delete(id):openPpl.add(id);renderCases();
+      if(openPpl.has(id))document.getElementById('pp-'+id+'-name_zh')?.focus();break;
+    case 'ppl-save':savePerson(cid,id);break;
+    case 'ppl-del':{
+      const x=(people[cid]||[]).find(y=>y.id===id);
+      if(x&&confirm(`刪除承接人「${pName(x)}」？`)&&await run(client.from('capture_people').delete().eq('id',id))){openPpl.delete(id);refresh('cases')}
+      break;}
+    case 'up-fold':{const g=b.dataset.g;upFold.has(g)?upFold.delete(g):upFold.add(g);store.set(K.fold,JSON.stringify([...upFold]));renderUpcoming();break;}
+    case 'sort-toggle':
+      if(sortMode){flushOrder();sortMode=false}else{sortMode=true;caseQuery='';$('#caseSearch').value=''}
+      document.body.classList.toggle('sorting',sortMode);$('#sortBtn').textContent=sortMode?'完成':'調整順序';renderCases();break;
+    case 'sort-up':case 'sort-down':{
+      const i=cases.findIndex(c=>c.id===cid);if(i<0)break;
+      moveCase(i,i+(act==='sort-up'?-1:1));break;}
+    case 'log-add':addLog(cid);break;
+    case 'log-del':{
+      if(!cs||!confirm('刪除這筆追蹤紀錄？'))break;
+      const log=(cs.progress_log||[]).filter(e=>e.id!==b.dataset.lid);cs.progress_log=log;renderAll();
+      if(await run(client.from('capture_cases').update({progress_log:log}).eq('id',cid)))refresh('cases');break;}
+    case 'case-flow':{
+      pickOpen.has(cid)?pickOpen.delete(cid):pickOpen.add(cid);renderCases();
+      if(pickOpen.has(cid))document.getElementById('picker-'+cid)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+      break;}
+    case 'pick-all':case 'pick-none':
+      document.querySelectorAll(`#picker-${cid} input[data-pick]:not(:disabled)`).forEach(x=>x.checked=act==='pick-all');syncPicker(cid);break;
+    case 'pick-add':{
+      const names=[...document.querySelectorAll(`#picker-${cid} input[data-pick]:checked:not(:disabled)`)].map(x=>flowOf(cs).list[+x.dataset.i]);
+      if(!names.length)break;
+      if(await insertFlow(cid,names)>0){pickOpen.delete(cid);refresh('cases')}
+      break;}
+    case 'item-edit':openItems.has(id)?openItems.delete(id):openItems.add(id);renderGeneral();
+      if(openItems.has(id))document.getElementById('it-name-'+id)?.focus();break;
+    case 'it-date':{const el=document.getElementById('it-date-'+id);if(el)el.value=b.dataset.off===''?'':todayISO(+b.dataset.off);break;}
+    case 'item-save':saveItem(id);break;
+    case 'sub-tpl':{const key='c-'+cid,sel=F(key,'type');F(key,'name').value=b.dataset.name;sel.value=b.dataset.type;sel.dataset.manual='1';rebuildDates(key);
+      (F(key,'from')||F(key,'dhl')||F(key,'status')).focus();break;}
+    case 'sub-edit':openSubs.has(id)?openSubs.delete(id):openSubs.add(id);renderCases();
+      if(openSubs.has(id))F('se-'+id,'name')?.scrollIntoView({block:'nearest',behavior:'smooth'});break;
+    case 'sub-save':{
+      if(!sub)break;const key='se-'+id;
+      const content=F(key,'name').value.trim()||sub.content,t=F(key,'type').value,dts=readDates(key);
+      const patch={content,status:F(key,'status').value.trim()||null,expiry_date:dts.expiry_date};
+      if(dts.issue_date!==(sub.issue_date||null))patch.issue_date=dts.issue_date;
+      if(dts.dhl_date!==(sub.dhl_date||null))patch.dhl_date=dts.dhl_date;
+      const wantType=t===guessType(content)?null:t;
+      if(wantType!==(sub.doc_type||null)&&!(wantType===null&&!sub.doc_type))patch.doc_type=wantType;
+      const notes=F(key,'notes').value;if(notes!==(sub.notes||''))patch.notes=notes||null;
+      if(await run(client.from('capture_case_subtasks').update(patch).eq('id',id))){
+        openSubs.delete(id);refresh('cases');
+      }
+      break;}
+    case 'sub-cleartask':
+      if(sub&&await run(client.from('capture_case_subtasks').update({task_date:null}).eq('id',id)))refresh('cases');break;
+    case 'case-del':
+      if(cs&&confirm(`刪除案件「${cs.name}」與所有子任務？`)&&await run(client.from('capture_cases').delete().eq('id',cid))){openCases.delete(cid);store.set(K.open,JSON.stringify([...openCases]));refresh('cases')}
+      break;
+    case 'logout':
+      await client?.auth.signOut();if(channel)client.removeChannel(channel);
+      user=null;channel=null;items=[];cases=[];subs={};focus=[];loaded={items:false,cases:false};gate('login');pill('已登出');break;
+    case 'reset':
+      if(confirm('清除這台裝置的連接設定並重新設定？（雲端資料不受影響）')){store.set(K.cfg,'');location.reload()}break;
+  }
+});
+$('#openList').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.save){e.preventDefault();saveItem(e.target.dataset.save)}
+});
+$('#caseType').addEventListener('change',e=>show('#caseTplWrap',e.target.value!=='general'));
+$('#caseSearch').addEventListener('input',e=>{caseQuery=e.target.value.trim();renderCases()});
+const caseList=$('#caseList');
+let dragId=null;
+caseList.addEventListener('dragstart',e=>{
+  const r=e.target.closest&&e.target.closest('.sortRow');if(!r)return;
+  dragId=r.dataset.cid;r.classList.add('dragging');e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',dragId)}catch{}
+});
+caseList.addEventListener('dragover',e=>{
+  if(!dragId)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  const r=e.target.closest&&e.target.closest('.sortRow');
+  caseList.querySelectorAll('.sortRow.over').forEach(x=>x.classList.remove('over'));
+  if(r&&r.dataset.cid!==dragId)r.classList.add('over');
+});
+caseList.addEventListener('drop',e=>{
+  if(!dragId)return;e.preventDefault();
+  const r=e.target.closest&&e.target.closest('.sortRow');
+  if(r&&r.dataset.cid!==dragId)moveCase(cases.findIndex(c=>c.id===dragId),+r.dataset.i);
+  dragId=null;
+});
+caseList.addEventListener('dragend',()=>{dragId=null;caseList.querySelectorAll('.dragging,.over').forEach(x=>x.classList.remove('dragging','over'))});
+caseList.addEventListener('toggle',e=>{
+  const d=e.target;if(!d.matches||!d.matches('details.caseCard'))return;
+  d.open?openCases.add(d.dataset.cid):openCases.delete(d.dataset.cid);
+  store.set(K.open,JSON.stringify([...openCases]));
+},true);
+caseList.addEventListener('focusout',async e=>{
+  const t=e.target;if(!t.dataset||!t.dataset.note)return;
+  const c=cases.find(x=>x.id===t.dataset.note);if(!c||(c.notes||'')===t.value)return;
+  c.notes=t.value;
+  if(await run(client.from('capture_cases').update({notes:t.value}).eq('id',c.id)))pill('● 備註已儲存','ok');
+});
+caseList.addEventListener('change',async e=>{
+  const t=e.target;if(!t.dataset)return;
+  if(t.dataset.cfield){
+    const f=t.dataset.cfield,c=cases.find(x=>x.id===t.dataset.cid);if(!c||(c[f]||'')===t.value)return;
+    c[f]=t.value||null;renderAll();
+    if(await run(client.from('capture_cases').update({[f]:t.value||null}).eq('id',c.id)))refresh('cases');
+  }else if(t.dataset.cbool){
+    const f=t.dataset.cbool,c=cases.find(x=>x.id===t.dataset.cid);if(!c)return;
+    c[f]=t.checked;renderAll();
+    if(await run(client.from('capture_cases').update({[f]:t.checked}).eq('id',c.id)))refresh('cases');
+  }else if(t.dataset.ctype){
+    const c=cases.find(x=>x.id===t.dataset.ctype);if(!c)return;
+    c.case_type=t.value;renderAll();
+    if(await run(client.from('capture_cases').update({case_type:t.value}).eq('id',c.id)))refresh('cases');
+  }
+});
+caseList.addEventListener('change',e=>{
+  const t=e.target;if(!t.dataset)return;
+  if(t.dataset.pickgroup){document.querySelectorAll(`#picker-${t.dataset.pickgroup} input[data-pick][data-g="${t.dataset.g}"]:not(:disabled)`).forEach(x=>x.checked=t.checked);syncPicker(t.dataset.pickgroup)}
+  else if(t.dataset.pick)syncPicker(t.dataset.pick);
+});
+caseList.addEventListener('input',onField);
+caseList.addEventListener('change',onField);
+caseList.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();addSub(e.target.dataset.enter)}
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.logenter){e.preventDefault();addLog(e.target.dataset.logenter)}
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.dataset&&e.target.dataset.pnew){e.preventDefault();addPerson(e.target.dataset.pnew)}
+});
+
+function setTab(t){
+  if(!['general','cases','upcoming'].includes(t))t='general';
+  document.body.dataset.tab=t;store.set(K.tab,t);
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  window.scrollTo({top:0});
+}
+
+/* ---------- 動態背景 ---------- */
+const Stars=(()=>{
+  const cv=document.getElementById('bgStars'),ctx=cv.getContext('2d');
+  const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w=0,h=0,dpr=1,dots=[],raf=0,last=0,on=false;
+  function size(){
+    dpr=Math.min(window.devicePixelRatio||1,2);w=cv.width=innerWidth*dpr;h=cv.height=innerHeight*dpr;
+    const n=Math.min(140,Math.round(innerWidth*innerHeight/11000));
+    dots=Array.from({length:n},()=>({x:Math.random()*w,y:Math.random()*h,r:(Math.random()*1.3+.35)*dpr,
+      v:(Math.random()*.22+.05)*dpr,dx:(Math.random()-.5)*.08*dpr,p:Math.random()*6.283,
+      c:Math.random()<.18?'216,176,106':(Math.random()<.5?'143,181,161':'231,227,217')}));
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    for(const d of dots){
+      if(!still){d.y-=d.v;d.x+=d.dx;if(d.y<-6){d.y=h+6;d.x=Math.random()*w}}
+      const a=.18+.32*(.5+.5*Math.sin(t/1600+d.p));
+      ctx.fillStyle=`rgba(${d.c},${a})`;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,6.283);ctx.fill();
+    }
+  }
+  function loop(t){if(!on)return;raf=requestAnimationFrame(loop);if(t-last<33)return;last=t;draw(t)}   // 約 30fps，省電
+  function start(){if(on)return;on=true;size();if(still)draw(0);else raf=requestAnimationFrame(loop)}
+  function stop(){on=false;cancelAnimationFrame(raf);ctx.clearRect(0,0,w,h)}
+  addEventListener('resize',()=>{if(on){size();if(still)draw(0)}});
+  document.addEventListener('visibilitychange',()=>{if(document.body.dataset.bg!=='stars')return;document.hidden?(on=false,cancelAnimationFrame(raf)):start()});
+  return{start,stop};
+})();
+function setBg(m){
+  if(!['mist','stars','off'].includes(m))m='mist';
+  document.body.dataset.bg=m;store.set(K.bg,m);$('#bgMode').value=m;
+  m==='stars'?Stars.start():Stars.stop();
+}
+$('#bgMode').addEventListener('change',e=>setBg(e.target.value));
+setBg(store.get(K.bg,'mist'));
+
+setTab(store.get(K.tab,'general'));
+renderFocus();
+addEventListener('online',softRefresh);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user)softRefresh()});
+init();
+
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
