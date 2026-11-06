@@ -321,3 +321,7 @@ notify pgrst, 'reload schema';
 - 不要使用 Secret key；不要把 Publishable key 寫死在程式裡。
 - 中文輸入法：按 Enter 送出的地方都要檢查 `e.isComposing` 與 `keyCode 229`。
 - 修改後請用手機寬度（390px）與電腦寬度都檢查過版面。
+
+
+## v3.0 案件本（2026-11-06，待上傳）
+本節優先於上方歷史規則：承接登記日+60天，一般承接聘僱與居留+15天；期滿轉換最晚通報=期滿日前一天、聘僱=實際送通報日+15天，居留與實際通報一起送並取更早居留效期。新資料沿用 progress_log 的保留 JSON 項目 casebook-meta-v1，所有渲染追蹤紀錄必須用 bookLog(c) 排除保留項目。bm(c) 讀設定，saveBook 寫入，保留舊紀錄。封存使用 book.archived；所有提醒、正在做、活動案件必須排除。新分類用 book.kind，case_type 保持 entry/takeover/general 相容。預設先只存一般案件名稱，不強制建立流程。所有裝置須升級後再操作，舊版看不懂封存。完整功能與驗證限制見本次 README。
