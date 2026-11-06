@@ -408,6 +408,25 @@ body,button,input,textarea,select{font-family:var(--casefont)}
 .archiveCard{padding:18px}.archiveCard h3{margin:0 0 8px}.archiveCard p{white-space:pre-wrap}
 .bookFilter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bookFilter select{width:auto;max-width:100%;font-size:14px}
 @media(max-width:600px){.bookGrid{grid-template-columns:1fr}.bookDeadline{flex-wrap:wrap;gap:4px}.caseOpts select{max-width:100%}.caseFoot{flex-wrap:wrap}}
+/* Window cats: a quiet, optional companion. */
+.catNook{max-width:904px;margin:0 auto 22px;background:#f9f6ee;border:1px solid #dcded0;border-radius:22px;overflow:hidden;color:var(--ink)}
+body.locked .catNook,body.locked #catDialog{display:none}
+.catNookHead{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}.catNookHead strong{font-weight:500;font-size:15px}.catNookHead span{color:var(--muted);font-size:11px;margin-left:8px}
+.catNook .btn,.catDialog .btn{font-size:13px;min-height:36px}
+.catScene{position:relative;height:158px;overflow:hidden;background:linear-gradient(180deg,#e8efea,#f4f2dc 83%,#d9d2ba 83%,#ded6bd 88%,#f0e8d7 88%)}
+.catScene:before{content:'';position:absolute;inset:10px 25% 26px 25%;border:7px solid #fffaf0;border-radius:50px 50px 0 0;box-shadow:0 0 0 1px #d9dfce;background:linear-gradient(90deg,transparent 49%,#fffaf0 49%,#fffaf0 51%,transparent 51%)}
+.catSun{position:absolute;width:31px;height:31px;border-radius:50%;background:#eeddb0;left:55%;top:23px;box-shadow:0 0 25px #f1e9c5}.catLeaf{position:absolute;left:8%;bottom:21px;width:27px;height:33px;background:#acba96;border-radius:3px 3px 12px 12px}.catLeaf:before{content:'❧';position:absolute;color:#839875;font-size:53px;bottom:13px;left:-7px}.catBookStack{position:absolute;right:9%;bottom:21px;width:52px;height:13px;border-radius:3px;background:#bdb19b;box-shadow:4px -13px 0 #cbd0b7,-1px -25px 0 #e6cfad}
+.catActor{position:absolute;bottom:18px;left:calc(50% - 60px);border:0;background:none;width:120px;height:120px;padding:0;cursor:pointer;transform-origin:50% 90%;animation:catBreathe 5s ease-in-out infinite}
+.catActor svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 3px 1px #606c5620)}.catActor.guest{left:calc(50% + 54px);width:88px;height:88px;bottom:19px;animation-delay:1s}
+.catTail{transform-origin:96px 94px;animation:catTail 6s ease-in-out infinite}.catBlink{transform-origin:65px 62px;animation:catBlink 8s infinite}.catHeart{position:absolute;left:48%;top:16px;color:#b57778;font-size:24px;opacity:0;pointer-events:none}.catNook[data-reaction="pet"] .catHeart,.catNook[data-reaction="snack"] .catHeart{animation:catHeart 2.4s ease-out}.catNook[data-reaction="pet"] .catActor{animation:catPurr .4s ease-in-out 4}.catNook[data-reaction="snack"] .catActor{animation:catPurr .5s ease-in-out 3}
+.catNook[data-quiet="true"] .catActor,.catNook[data-quiet="true"] .catTail,.catNook[data-quiet="true"] .catBlink{animation:none}.catNook[data-quiet="true"] .catOpenEye{display:none}.catSleepEye{display:none}.catNook[data-quiet="true"] .catSleepEye{display:block}
+.catNookFoot{padding:10px 18px 14px}.catSpeech{min-height:23px;font-size:13px;color:#65725f;margin:0 0 7px}.catButtons{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.catButtons .catBookBtn{margin-left:auto}.catHint{color:var(--muted);font-size:11px;margin-top:7px}.catSync{color:var(--muted);font-size:10px}
+.catNook[data-fold="true"] .catNookBody{display:none}
+.catDialog{border:1px solid var(--line);border-radius:24px;max-width:750px;width:calc(100% - 32px);max-height:85dvh;padding:24px;color:var(--ink);background:var(--surface);font-family:var(--casefont);overscroll-behavior:contain}.catDialog::backdrop{background:#34403566;backdrop-filter:blur(3px)}.catDialogHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:6px}.catDialog h2{margin:0;font-size:23px;font-weight:500}.catDialogIntro{font-size:13px;color:var(--muted);margin:5px 0 18px}.catGallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catEntry{border:1px solid var(--line);border-radius:16px;background:#f4f2e9;padding:12px;text-align:center;min-width:0}.catEntry svg{height:100px;width:110px;max-width:100%}.catEntry h3{font-size:16px;margin:0 0 5px;font-weight:500}.catEntry p{font-size:12px;color:var(--muted);margin:4px 0 8px}.catEntry.locked svg{filter:grayscale(1) brightness(.3);opacity:.25}.catEntry .btn{white-space:normal}.catUnlocked{font-size:10px;color:#76846c;display:block}.catDialog .catHint{margin-top:16px}
+@keyframes catBreathe{50%{transform:translateY(-2px) scaleY(1.02)}}@keyframes catTail{0%,100%{transform:rotate(0)}50%{transform:rotate(-8deg)}}@keyframes catBlink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.08)}}@keyframes catPurr{50%{transform:rotate(3deg) translateY(-2px)}}@keyframes catHeart{10%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+@media(max-width:980px){.catNook{margin:0 22px 18px}.catGallery{grid-template-columns:repeat(2,minmax(0,1fr))}.catNookHead{padding:10px 14px}.catNookHead span{display:none}.catScene{height:142px}.catNookFoot{padding:10px 14px}.catButtons{gap:3px}.catDialog{padding:18px}.catButtons .catBookBtn{margin-left:0}}
+@media(prefers-reduced-motion:reduce){.catActor,.catTail,.catBlink,.catHeart{animation:none!important}}
+
 </style>
 </head>
 <body class="locked" data-tab="general" data-bg="mist">
@@ -444,6 +463,13 @@ body,button,input,textarea,select{font-family:var(--casefont)}
   <svg class="brandArt" viewBox="0 0 150 120" fill="none" aria-hidden="true"><ellipse cx="80" cy="109" rx="54" ry="5" fill="#e6e3d8"/><path d="M45 92L100 84L126 96L72 107Z" fill="#e7deca"/><path d="M45 89L100 81L126 93L72 104Z" fill="#fffaf0" stroke="#d2c8af"/><path d="M54 91L94 85M60 94L102 88M66 97L110 91" stroke="#ddd6c5"/><path d="M83 65L110 65L107 88Q96 94 86 88Z" fill="#b8c2a6"/><path d="M96 67Q94 37 104 18M96 52Q79 44 76 32M98 43Q116 35 119 24" stroke="#7d926d" stroke-width="1.5"/><path d="M104 22Q91 8 105 4Q116 8 104 22M98 42Q100 23 114 25Q119 35 98 42M91 48Q75 49 73 35Q86 32 91 48M97 61Q109 46 118 52Q121 63 97 61" fill="#a7b995"/><circle cx="37" cy="65" r="3" fill="#cfb78f"/><path d="M26 35L26 43M22 39L30 39" stroke="#c4cbb4" stroke-linecap="round"/></svg>
 </header>
 <!-- 正在做（全域） -->
+<section id="catNook" class="catNook" aria-label="霧棲的窗邊">
+  <div class="catNookHead"><div><strong>霧棲的窗邊</strong><span>留一個位置，給毛茸茸的日常。</span></div><button type="button" class="btn ghost" id="catFold" aria-expanded="true">收成小腳印</button></div>
+  <div class="catNookBody"><div class="catScene"><span class="catSun" aria-hidden="true"></span><span class="catLeaf" aria-hidden="true"></span><span class="catBookStack" aria-hidden="true"></span><button type="button" class="catActor" id="catMain" aria-label="摸摸霧棲"></button><button type="button" class="catActor guest" id="catGuest" hidden></button><span class="catHeart" aria-hidden="true">♡</span></div>
+  <div class="catNookFoot"><p id="catSpeech" class="catSpeech" role="status" aria-live="polite">霧棲替妳留了一個位置。</p><div class="catButtons"><button type="button" class="btn secondary" id="catPet">摸摸霧棲</button><button type="button" class="btn ghost" id="catSnack">給點心</button><button type="button" class="btn ghost" id="catVisit">看看窗邊</button><button type="button" class="btn ghost" id="catQuiet" aria-pressed="false">安靜陪伴</button><button type="button" class="btn secondary catBookBtn" id="catBook">貓咪圖鑑 1／7</button></div><div class="catHint">不用每天照顧。沒來的日子，牠們也會好好曬太陽。 <span class="catSync" id="catSync"></span></div></div></div>
+</section>
+<dialog id="catDialog" class="catDialog" aria-labelledby="catDialogTitle"><div class="catDialogHead"><h2 id="catDialogTitle">窗邊的朋友們</h2><button type="button" id="catClose" class="btn ghost" aria-label="關閉貓咪圖鑑">關閉 ×</button></div><p class="catDialogIntro" id="catCollectionCount">霧棲會一直在這裡，其他朋友慢慢認識就好。</p><div class="catGallery" id="catGallery"></div><p class="catHint">互動、記下第一件事或結案，都可能遇見朋友；也可以單純到窗邊看看。沒有連續登入、限時絕版或飢餓值。</p></dialog>
+
 <header class="focusBar">
   <div class="focusCard" id="focusCard">
     <div class="focusMain">
@@ -518,7 +544,7 @@ body,button,input,textarea,select{font-family:var(--casefont)}
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
   <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
-  <label class="bgPick">字體<select id="fontPicker" aria-label="字體"></select></label><div>Capture Pad v3.0.1 · 案件本</div>
+  <label class="bgPick">字體<select id="fontPicker" aria-label="字體"></select></label><div>Capture Pad v3.1.1 · 窗邊有貓</div>
 </footer>
 
 
@@ -548,6 +574,7 @@ async function saveBook(c,patch,extra={}){
   if(!c)return false;
   const log=[...bookLog(c),bookRowMeta({...bm(c),...patch})];
   if(!await run(client.from('capture_cases').update({...extra,progress_log:log}).eq('id',c.id).eq('user_id',user.id)))return false;
+  if(patch.archived===true)Cats.milestone('archive');
   Object.assign(c,extra,{progress_log:log});Object.entries(patch).forEach(([k,v])=>{const el=document.getElementById('book-'+k+'-'+c.id);if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v||''}});await refresh('cases');return true;
 }
 const BOOK_STEPS={
@@ -1143,7 +1170,7 @@ function gate(which){
 async function startApp(){
   document.body.classList.remove('locked');show('#gate',false);
   $('#who').textContent=user.email||'';
-  await refresh('all');await migrateLocal();await migrateOldFocus();subscribe();
+  await refresh('all');await migrateLocal();await migrateOldFocus();subscribe();Cats.start(user);
 }
 async function init(){
   let cfg={};try{cfg=JSON.parse(store.get(K.cfg,'{}'))}catch{}
@@ -1177,7 +1204,7 @@ $('#captureForm').addEventListener('submit',async e=>{
   const planned_date=$('#dueDate').value||null;
   input.value='';$('#dueDate').value='';input.focus();
   if(!await run(client.from('capture_items').insert({user_id:user.id,content,planned_date}))){input.value=content;return}
-  refresh('items');
+  Cats.milestone('record');refresh('items');
 });
 $('#caseForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -1187,6 +1214,7 @@ $('#caseForm').addEventListener('submit',async e=>{
   row.sort_order=Math.min(0,...cases.map(c=>c.sort_order).filter(v=>typeof v==='number'))-1;
   const {data,error}=await client.from('capture_cases').insert(row).select().single();
   if(error){failPill(error,'新增案件');el.value=name;return}
+  Cats.milestone('record');
   if(kind!=='general'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
@@ -1361,6 +1389,7 @@ document.addEventListener('click',async e=>{
       if(cs&&confirm(`刪除案件「${cs.name}」與所有子任務？`)&&await run(client.from('capture_cases').delete().eq('id',cid))){openCases.delete(cid);store.set(K.open,JSON.stringify([...openCases]));refresh('cases')}
       break;
     case 'logout':
+      Cats.stop();
       await client?.auth.signOut();if(channel)client.removeChannel(channel);
       user=null;channel=null;items=[];cases=[];subs={};focus=[];loaded={items:false,cases:false};gate('login');pill('已登出');break;
     case 'reset':
@@ -1483,6 +1512,55 @@ const BOOK_FONTS={gensen:['源泉圓體','CaseGenSen,Huninn,sans-serif'],swei:['
 $('#fontPicker').innerHTML=Object.entries(BOOK_FONTS).map(([v,[l]])=>`<option value="${v}">${l}</option>`).join('');
 function setFont(v){if(!BOOK_FONTS[v])v='gensen';document.documentElement.style.setProperty('--casefont',BOOK_FONTS[v][1]);$('#fontPicker').value=v;store.set('capturePad.font',v)}
 $('#fontPicker').addEventListener('change',e=>setFont(e.target.value));setFont(store.get('capturePad.font','gensen'));
+
+/* Catbook is isolated from case data. Only its own Auth user_metadata key is written. */
+const Cats=(()=>{
+ const KEY='capture_catbook_v1',SCHEMA=1;
+ const defs=[
+ {id:'wuqi',name:'霧棲',coat:'#383c44',chest:'#454953',ear:'#79707d',eye:'#7eafd4',fluff:true,story:'深灰近黑的長毛，半瞇的藍眼睛。尾巴很蓬，脾氣也有一點。',hint:'妳的固定室友',event:'home'},
+ {id:'apricot',name:'杏糖',coat:'#d7a366',chest:'#f4dfb9',ear:'#dbb2a1',eye:'#8c9970',stripe:true,story:'把日光當成自己的毯子。被摸摸時，會假裝剛好路過。',hint:'摸摸霧棲，或偶爾到窗邊看看',event:'pet'},
+ {id:'inkbean',name:'墨豆',coat:'#464c50',chest:'#f6f0e3',ear:'#b39498',eye:'#c5b378',bib:true,story:'穿著小小白領結，對點心卻一點也不客氣。',hint:'招待一次點心，或偶爾到窗邊看看',event:'snack'},
+ {id:'snow',name:'雪糰',coat:'#f2eee3',chest:'#fffaf0',ear:'#dfb8b5',eye:'#92b6b6',fluff:true,story:'安靜坐下來以後，看起來像窗臺多了一小朵雲。',hint:'到窗邊看看，或許有朋友路過',event:'visit'},
+ {id:'calico',name:'三花酥',coat:'#ebdfcc',chest:'#fff7e8',ear:'#d5b0a8',eye:'#a2a478',calico:true,story:'喜歡在事情告一段落時出現。慶祝的方法，是霸佔妳的位置。',hint:'第一次結案，或偶爾到窗邊看看',event:'archive'},
+ {id:'chestnut',name:'栗栗',coat:'#9c8771',chest:'#d4c5ad',ear:'#c4a0a0',eye:'#b2bd8e',stripe:true,story:'聞到紙張的味道就會靠近。每一本新筆記，都值得先坐一下。',hint:'記下一件事，或偶爾到窗邊看看',event:'record'},
+ {id:'raindrop',name:'雨點',coat:'#8e9da3',chest:'#c2ccca',ear:'#c9abb5',eye:'#d3b97e',story:'喜歡安靜的角落和雨後的風。陪著妳時，連尾巴都放輕了。',hint:'開啟安靜陪伴，或偶爾到窗邊看看',event:'quiet'}
+ ];
+ let state=null,owner='',timer=null,busy=false,again=false,epoch=0,reactionTimer=null;
+ const el=id=>document.getElementById(id);
+ function fresh(){return{schema:SCHEMA,unlocked:['wuqi'],bonds:{wuqi:0},guest:'',quiet:false,fold:false,lastVisit:'',updated:0}}
+ function clean(raw){const s=fresh(),valid=new Set(defs.map(d=>d.id));if(!raw||typeof raw!=='object')return s;
+ s.unlocked=[...new Set(['wuqi',...(Array.isArray(raw.unlocked)?raw.unlocked:[]).filter(x=>valid.has(x))])];
+ for(const id of s.unlocked)s.bonds[id]=Math.max(0,Math.min(9999,Number(raw.bonds?.[id])||0));
+ s.lastVisit=typeof raw.lastVisit==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw.lastVisit)?raw.lastVisit:'';
+ s.guest=s.unlocked.includes(raw.guest)&&raw.guest!=='wuqi'?raw.guest:'';s.quiet=raw.quiet===true;s.fold=raw.fold===true;s.updated=Number(raw.updated)||0;return s;
+ }
+ function merge(a,b){a=clean(a);b=clean(b);const recent=a.updated>=b.updated?a:b;return clean({...recent,unlocked:[...new Set([...a.unlocked,...b.unlocked])],bonds:Object.fromEntries(defs.map(d=>[d.id,Math.max(a.bonds[d.id]||0,b.bonds[d.id]||0)]))})}
+ function svg(c){return `<svg viewBox="0 0 140 130" aria-hidden="true" focusable="false"><ellipse cx="72" cy="116" rx="45" ry="6" fill="#85897720"/><path class="catTail" d="${c.fluff?'M91 110 Q139 123 131 84 L137 86 L129 76 L134 74 Q124 54 114 64 L108 61 L109 70 L103 71 Q103 87 116 93 Q123 106 93 96Z':'M93 105 Q137 113 123 76 Q117 60 110 72 Q106 81 117 88 Q128 104 94 96'}" fill="${c.coat}"/><path d="M42 111 Q26 87 43 69 Q57 53 81 67 Q106 78 100 112Z" fill="${c.coat}"/>${c.fluff?`<path d="M36 81L27 88L36 90L29 100L39 99L35 110L47 105M93 81L105 89L99 91L108 100L98 99L103 112L88 106" fill="${c.coat}"/>`:''}<ellipse cx="69" cy="94" rx="17" ry="22" fill="${c.chest}" opacity="${c.bib?1:.5}"/><path d="M36 49L36 20Q39 16 58 36Q72 30 83 37Q104 17 107 24L104 55Q111 80 91 85Q70 97 44 80Q29 70 36 49" fill="${c.coat}"/><path d="M40 28L42 46L53 38M89 40L101 29L100 48" fill="${c.ear}"/>${c.calico?'<path d="M36 49L36 20Q45 15 61 36L57 61L36 66Z" fill="#bf895d"/><path d="M83 37Q104 17 107 24L104 55L88 61Z" fill="#555a56"/>':''}${c.bib?'<path d="M67 52L60 73L72 83L86 72L77 51Z" fill="#f6f0e3"/>':''}${c.stripe?'<path d="M58 36L63 48M69 34L72 47M82 36L80 48M38 60L48 63M104 60L94 63M42 93L51 97M94 92L87 96" stroke="#5b574b" stroke-opacity=".3" stroke-width="4" stroke-linecap="round"/>':''}<g class="catOpenEye catBlink"><path d="M45 57Q53 62 61 57Q59 68 53 68Q47 68 45 57M79 57Q87 62 95 57Q93 68 87 68Q81 68 79 57" fill="${c.eye}"/><path d="M53 62V66M87 62V66" stroke="#33424d" stroke-width="2.5" stroke-linecap="round"/><path d="M44 57Q53 61 62 57M78 57Q87 61 96 57" fill="none" stroke="#30383e" stroke-width="2" stroke-linecap="round"/></g><g class="catSleepEye" fill="none" stroke="#36434b" stroke-width="2" stroke-linecap="round"><path d="M46 64Q53 58 60 64M80 64Q87 58 94 64"/></g><path d="M67 71L74 71L70.5 75Z" fill="#c49fa7"/><path d="M70 75Q65 81 61 76M70 75Q75 81 79 76" fill="none" stroke="#606269" stroke-width="1.2" stroke-linecap="round"/><path d="M40 72L24 69M41 77L25 79M99 72L115 69M98 77L114 79" stroke="#777b80" stroke-width="1" opacity=".65"/><ellipse cx="53" cy="111" rx="12" ry="5" fill="${c.coat}"/><ellipse cx="87" cy="111" rx="12" ry="5" fill="${c.coat}"/></svg>`}
+ function say(t){if(state)el('catSpeech').textContent=t}
+ function local(){if(owner&&state)store.set(KEY+'.'+owner,JSON.stringify(state))}
+ function persist(){if(!state||!owner)return;state.updated=Date.now();local();clearTimeout(timer);timer=setTimeout(sync,1800);el('catSync').textContent=navigator.onLine?'記下了，正在同步…':'先留在這台裝置，連線後再同步'}
+ async function sync(){if(!state||!owner||!client)return;if(!navigator.onLine){el('catSync').textContent='先留在這台裝置，連線後再同步';return}if(busy){again=true;return}busy=true;const who=owner,token=epoch;
+ try{const r=await client.auth.getUser();if(epoch!==token||owner!==who)return;if(r.error||r.data?.user?.id!==who)throw Error('profile');
+ state=merge(state,r.data.user.user_metadata?.[KEY]);local();
+ const w=await client.auth.updateUser({data:{[KEY]:state}});if(epoch!==token||owner!==who)return;if(w.error)throw w.error;el('catSync').textContent='圖鑑已同步';
+ }catch{if(owner===who)el('catSync').textContent='先留在這台裝置，連線後再同步'}finally{busy=false;if(again){again=false;clearTimeout(timer);timer=setTimeout(sync,300)}}}
+ function draw(){if(!state)return;const n=el('catNook');n.dataset.quiet=String(state.quiet);n.dataset.fold=String(state.fold);el('catFold').textContent=state.fold?'打開窗邊':'收成小腳印';el('catFold').setAttribute('aria-expanded',String(!state.fold));el('catQuiet').setAttribute('aria-pressed',String(state.quiet));el('catQuiet').textContent=state.quiet?'恢復活動':'安靜陪伴';el('catMain').innerHTML=svg(defs[0]);const guest=defs.find(d=>d.id===state.guest);el('catGuest').hidden=!guest;el('catGuest').innerHTML=guest?svg(guest):'';el('catGuest').setAttribute('aria-label',guest?'摸摸'+guest.name:'來訪的貓');el('catBook').textContent=`貓咪圖鑑 ${state.unlocked.length}／${defs.length}`;if(el('catDialog').open)gallery()}
+ function gallery(){if(!state)return;el('catCollectionCount').textContent=`已認識 ${state.unlocked.length}／${defs.length} 位朋友。霧棲一直都在，旁邊的位子可以邀請朋友。`;
+ el('catGallery').innerHTML=defs.map((c,i)=>{const known=state.unlocked.includes(c.id),bond=state.bonds[c.id]||0;return `<article class="catEntry${known?'':' locked'}">${svg(c)}<h3>${known?c.name:'還沒見過的朋友'}</h3><span class="catUnlocked">${known?`No. ${String(i+1).padStart(2,'0')} · ${bond>=5?'會主動蹭蹭':bond?'記得妳的手':'初次見面'}`:'等待一次相遇'}</span><p>${known?c.story:c.hint}</p>${known&&c.id!=='wuqi'?`<button type="button" class="btn secondary" data-cat-invite="${c.id}">${state.guest===c.id?'讓牠去玩':'邀請到窗邊'}</button>`:known?'<span class="catUnlocked">固定陪伴，不會被替換</span>':''}</article>`}).join('')}
+ function meet(id){if(!state||state.unlocked.includes(id))return null;const c=defs.find(d=>d.id===id);if(!c)return null;state.unlocked.push(id);state.bonds[id]=0;state.guest=id;return c}
+ function react(action,id='wuqi'){if(!state)return;const c=defs.find(d=>d.id===id)||defs[0];state.bonds[c.id]=(state.bonds[c.id]||0)+1;const found=meet(defs.find(d=>d.event===action)?.id);draw();clearTimeout(reactionTimer);el('catNook').dataset.reaction='';requestAnimationFrame(()=>{if(state)el('catNook').dataset.reaction=action});reactionTimer=setTimeout(()=>{el('catNook').dataset.reaction=''},2500);say(found?`${found.name}探頭來了，已收進圖鑑。`:action==='snack'?`${c.name}收下點心，尾巴悄悄晃了一下。`:[`${c.name}半瞇著眼，沒有躲開妳的手。`,`${c.name}把頭靠過來一點點。`,`${c.name}：「喵。」（翻譯：可以再摸一下。）`][Math.floor(Math.random()*3)]);persist()}
+ function milestone(event){if(!state)return;const found=meet(defs.find(d=>d.event===event)?.id);if(found){draw();say(event==='archive'?`這件事收好了。${found.name}也來陪妳慶祝。`:`${found.name}聞到新筆記的味道，過來坐坐。`);persist()}}
+ async function start(u){stop();owner=u.id;state=clean((()=>{try{return JSON.parse(store.get(KEY+'.'+owner,'null'))}catch{return null}})());state=merge(state,u.user_metadata?.[KEY]);draw();say('霧棲替妳留了一個位置。');local();const token=epoch;await sync();if(state&&owner===u.id&&token===epoch&&state.lastVisit!==todayISO()){state.lastVisit=todayISO();const missing=defs.filter(c=>!state.unlocked.includes(c.id));if(missing.length&&Math.random()<.35){const c=missing[Math.floor(Math.random()*missing.length)];meet(c.id);draw();say(`${c.name}今天剛好路過，已留下牠的圖鑑。`)}persist()}}
+ function stop(){epoch++;clearTimeout(timer);clearTimeout(reactionTimer);owner='';state=null;again=false;if(el('catDialog').open)el('catDialog').close();el('catGallery').innerHTML='';el('catGuest').hidden=true;el('catSync').textContent=''}
+ el('catMain').addEventListener('click',()=>react('pet'));el('catPet').addEventListener('click',()=>react('pet'));el('catSnack').addEventListener('click',()=>react('snack'));el('catGuest').addEventListener('click',()=>{if(state?.guest)react('pet',state.guest)});
+ el('catFold').addEventListener('click',()=>{if(!state)return;state.fold=!state.fold;draw();persist()});
+ el('catQuiet').addEventListener('click',()=>{if(!state)return;state.quiet=!state.quiet;const found=state.quiet?meet('raindrop'):null;draw();say(found?'雨點找到安靜的位置，也留下來了。':state.quiet?'牠們蜷起身子，陪妳安靜待一會兒。':'霧棲醒了，慢慢伸了個懶腰。');persist()});
+ el('catVisit').addEventListener('click',()=>{if(!state)return;const missing=defs.filter(c=>!state.unlocked.includes(c.id));if(!missing.length){say('朋友們都認識了，打開圖鑑邀請牠們來坐坐吧。');return}const c=missing[Math.floor(Math.random()*missing.length)];meet(c.id);draw();say(`${c.name}剛好路過。嗨，新的毛朋友！已收進圖鑑。`);persist()});
+ el('catBook').addEventListener('click',()=>{if(state){gallery();el('catDialog').showModal()}});el('catClose').addEventListener('click',()=>el('catDialog').close());
+ el('catGallery').addEventListener('click',e=>{const b=e.target.closest('[data-cat-invite]');if(!b||!state||!state.unlocked.includes(b.dataset.catInvite))return;state.guest=state.guest===b.dataset.catInvite?'':b.dataset.catInvite;draw();say(state.guest?`${defs.find(d=>d.id===state.guest).name}在霧棲旁邊坐下了。`:'朋友出去散步了，晚一點再來。');persist()});
+ addEventListener('online',()=>{if(state)sync()});document.addEventListener('visibilitychange',()=>{if(state&&!document.hidden)sync();else if(state){clearTimeout(timer);sync()}});
+ return{start,stop,milestone,clean,merge,defs};
+})();
 
 const paperDate=new Intl.DateTimeFormat('zh-TW',{month:'long',day:'numeric',weekday:'short'});
 $('#paperDate').textContent=paperDate.format(new Date());
