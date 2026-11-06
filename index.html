@@ -584,7 +584,7 @@ input[type=date]{min-height:40px}.upDate{min-width:90px}.catUnlocked{font-family
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
   <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
-  <div>Capture Pad v3.6 · 文件類型補齊</div>
+  <div>Capture Pad v3.7 · 日曆操作修正</div>
 </footer>
 
 
@@ -876,6 +876,20 @@ async function run(p){pill('同步中…');const {error}=await p;if(error){conso
   const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date|sort_order/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
+
+let dateRenderPending=false,dateRefreshPending=null,dateBlurTimer=null;
+const dateInputActive=()=>document.activeElement?.matches?.('input[type="date"]')||false;
+function queueDateRefresh(which){dateRefreshPending=!dateRefreshPending||dateRefreshPending===which?which:'all'}
+async function flushDateWork(){
+ if(dateInputActive())return;
+ const which=dateRefreshPending,render=dateRenderPending;dateRefreshPending=null;dateRenderPending=false;
+ if(which)await refresh(which);else if(render)renderAll();
+}
+document.addEventListener('focusout',e=>{
+ if(e.target?.type!=='date')return;
+ clearTimeout(dateBlurTimer);dateBlurTimer=setTimeout(flushDateWork,120);
+});
+
 /* ---------- 正在做 ---------- */
 // 每一筆是 {k:'item',id} / {k:'sub',id,cid} / {k:'text',t}；第一筆是「主要」
 const fkey=e=>e.k==='text'?'t:'+e.t:e.k+':'+e.id;
@@ -953,6 +967,7 @@ function renderFocus(){
 
 /* ---------- 一般 ---------- */
 function renderGeneral(){
+  if(dateInputActive()){dateRenderPending=true;return items.filter(x=>!x.is_completed).length}
   const open=items.filter(x=>!x.is_completed).sort((a,b)=>(b.is_pinned-a.is_pinned)||(a.planned_date||'9999').localeCompare(b.planned_date||'9999')||(new Date(b.updated_at)-new Date(a.updated_at)));
   const doneAll=items.filter(x=>x.is_completed).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
   const doneToday=doneAll.filter(x=>isToday(x.updated_at));
@@ -1075,6 +1090,7 @@ function subRowHTML(c,x){
   return html;
 }
 function renderCases(){
+  if(dateInputActive()){dateRenderPending=true;return activeCases().length}
   const box=$('#caseList');
   // 重繪前保留輸入中的內容與游標，避免同步時打到一半被清掉
   const saved={};box.querySelectorAll('input[id],select[id],textarea[id$="-notes"]').forEach(el=>saved[el.id]=el.value);
@@ -1190,6 +1206,7 @@ function renderUpcoming(){
 }
 
 function renderAll(){
+  if(dateInputActive()){dateRenderPending=true;return}
   renderFocus();
   const nOpen=renderGeneral(),nCases=renderCases(),nUrgent=renderUpcoming();
   $('#n-general').textContent=nOpen||'';
@@ -1213,6 +1230,7 @@ async function loadCases(){
 }
 async function refresh(which='all'){
   if(!client||!user)return;
+  if(dateInputActive()){queueDateRefresh(which);return}
   pill('同步中…');
   try{if(which!=='cases'){await loadItems();loaded.items=true}if(which!=='items'){await loadCases();loaded.cases=true}if(which==='all')await loadFocus();pill('● 已同步','ok')}
   catch(e){console.error(e);pill('同步失敗','bad')}
@@ -1511,8 +1529,8 @@ caseList.addEventListener('change',async e=>{
   const t=e.target;if(!t.dataset)return;
   if(t.dataset.cfield){
     const f=t.dataset.cfield,c=cases.find(x=>x.id===t.dataset.cid);if(!c||archived(c)||(c[f]||'')===t.value)return;
-    c[f]=t.value||null;renderAll();
-    if(await run(client.from('capture_cases').update({[f]:t.value||null}).eq('id',c.id)))refresh('cases');
+    c[f]=t.value||null;if(t.type==='date')dateRenderPending=true;else renderAll();
+    if(await run(client.from('capture_cases').update({[f]:t.value||null}).eq('id',c.id))){if(t.type==='date')pill('● 日期已儲存','ok');refresh('cases');}
   }else if(t.dataset.cbool){
     const f=t.dataset.cbool,c=cases.find(x=>x.id===t.dataset.cid);if(!c)return;
     c[f]=t.checked;renderAll();
