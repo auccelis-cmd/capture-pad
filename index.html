@@ -518,7 +518,7 @@ body,button,input,textarea,select{font-family:var(--casefont)}
   <button class="btn ghost" data-act="logout">登出</button>
   <button class="btn ghost" data-act="reset">重設連接</button>
   <label class="bgPick">背景<select id="bgMode"><option value="mist">霧光流動</option><option value="stars">星塵漂浮</option><option value="off">靜止</option></select></label>
-  <label class="bgPick">字體<select id="fontPicker" aria-label="字體"></select></label><div>Capture Pad v3.0 · 案件本</div>
+  <label class="bgPick">字體<select id="fontPicker" aria-label="字體"></select></label><div>Capture Pad v3.0.1 · 案件本</div>
 </footer>
 
 
@@ -588,7 +588,7 @@ function bookArchiveHTML(c){return `<article class="caseCard archiveCard"><h3>${
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const WD='日一二三四五六';
 const stamp=ts=>new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts));
-const parseD=d=>{const[y,m,day]=d.split('-').map(Number);return new Date(y,m-1,day)};
+const parseD=d=>{const[y,m,day]=String(d||todayISO()).split('-').map(Number);return new Date(y,m-1,day)};
 const iso=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 const todayISO=(off=0)=>{const d=new Date();d.setDate(d.getDate()+off);return iso(d)};
 const dayDiff=d=>{const n=new Date();return Math.round((parseD(d)-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5)};
@@ -771,9 +771,13 @@ function dueOf(c,x){
 const typeOf=x=>(x.doc_type&&TYPES[x.doc_type])?x.doc_type:guessType(x.content);
 const ymd=d=>{const dt=parseD(d);return`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`};
 let openSubs=new Set(),openItems=new Set();
-function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c}
+let lastErr='';
+function errText(e){if(!e)return'未知錯誤';return[e.message||String(e),e.code&&('代碼 '+e.code),e.details,e.hint].filter(Boolean).join('\n')}
+function failPill(e,where){lastErr=(where?where+'\n':'')+errText(e);console.error(where,e);pill('同步失敗・點我看原因','bad')}
+function pill(t,c=''){const e=$('#cloudPill');e.textContent=t;e.className='pill '+c;e.style.cursor=c==='bad'?'pointer':''}
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='cloudPill'&&lastErr&&e.target.classList.contains('bad'))alert('同步失敗原因：\n'+lastErr)});
 function show(sel,on){$(sel).classList.toggle('hidden',!on)}
-async function run(p){pill('同步中…');const {error}=await p;if(error){console.error(error);pill('同步失敗','bad');
+async function run(p){pill('同步中…');let error;try{({error}=await p)}catch(x){error=x}if(error){failPill(error,'寫入');
   const m=error.message||'';if(/notes|issue_date|doc_type|dhl_date|arrival_date|case_type|pick_date|visa_|progress_log|takeover_date|expiry_transfer|takeover_mode|contract_end_date|agree_date|sort_order/.test(m))alert('資料庫還沒有新欄位。請先到 Supabase 的 SQL Editor 執行更新用的 SQL，再試一次。');
   return false}return true}
 
@@ -1110,7 +1114,7 @@ async function refresh(which='all'){
   if(!client||!user)return;
   pill('同步中…');
   try{if(which!=='cases'){await loadItems();loaded.items=true}if(which!=='items'){await loadCases();loaded.cases=true}if(which==='all')await loadFocus();pill('● 已同步','ok')}
-  catch(e){console.error(e);pill('同步失敗','bad')}
+  catch(e){failPill(e,'讀取')}
   pruneFocus();renderAll();
 }
 let rt;function softRefresh(){clearTimeout(rt);rt=setTimeout(()=>refresh('all'),300)}
@@ -1182,7 +1186,7 @@ $('#caseForm').addEventListener('submit',async e=>{
   const kind=$('#caseType').value,type=baseKind(kind),row={user_id:user.id,name,case_type:type,progress_log:[bookRowMeta({kind})]};
   row.sort_order=Math.min(0,...cases.map(c=>c.sort_order).filter(v=>typeof v==='number'))-1;
   const {data,error}=await client.from('capture_cases').insert(row).select().single();
-  if(error){console.error(error);pill('同步失敗','bad');el.value=name;return}
+  if(error){failPill(error,'新增案件');el.value=name;return}
   if(kind!=='general'&&$('#caseTpl').checked&&data){pickOpen.add(data.id);openCases.add(data.id);store.set(K.open,JSON.stringify([...openCases]))}
   refresh('cases');
 });
